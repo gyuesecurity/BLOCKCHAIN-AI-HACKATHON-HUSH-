@@ -8,6 +8,37 @@ class ParseError(ValueError):
     pass
 
 
+def structure_constraint(source_text: str) -> dict[str, Any]:
+    """자연어 → 구조화 제약. 실제 LLM 우선, 실패 시 규칙 기반 fallback.
+
+    반환 shape은 두 경로 모두 동일하다:
+    `{parser_mode, is_ai, notice, source_text, structured_candidate, ...}`.
+    LLM 경로는 `parser_mode="LLM"`, `is_ai=True`, `model`을 추가로 담고,
+    fallback 경로는 `parser_mode="DEMO_RULE_PARSER"`, `is_ai=False`를 유지한다.
+    두 경로 모두 실패하면 `ParseError`.
+    """
+    text = source_text.strip()
+    if not text or len(text) > 500:
+        raise ParseError("조건은 1자 이상 500자 이하로 입력해 주세요.")
+
+    from .llm import LLMUnavailable, llm_enabled, structure_with_llm
+
+    if not llm_enabled():
+        return parse_korean_constraint(text)
+
+    try:
+        return structure_with_llm(text)
+    except LLMUnavailable as exc:
+        result = parse_korean_constraint(text)
+        result["llm_fallback"] = True
+        result["notice"] = (
+            "LLM 구조화에 실패해 규칙 기반 fallback으로 처리했습니다. "
+            "결과는 확정 전 draft입니다."
+        )
+        result["llm_fallback_reason"] = str(exc)[:120]
+        return result
+
+
 def _number(text: str) -> int | None:
     compact = text.replace(",", "")
     match = re.search(r"(\d+)\s*만\s*원", compact)

@@ -20,7 +20,28 @@ uvicorn hush.main:app --app-dir backend --reload
 | C | `HUSH-C-2026` | `휠체어 경사로가 필요해요` |
 | D | `HUSH-D-2026` | `21시 이전에 끝나야 해요` |
 
-현재 자연어 구조화는 외부 LLM이 아니라 허용 schema만 처리하는 deterministic fallback이다. 응답과 화면에 `DEMO_RULE_PARSER`, `is_ai=false`를 표시하며 AI라고 과장하지 않는다.
+## 자연어 구조화 (AI)
+
+`GEMINI_API_KEY`(또는 `GOOGLE_API_KEY`)가 설정돼 있으면 자연어 입력을 실제 Google Gemini로 구조화한다.
+
+```bash
+pip install -e '.[llm]'
+export GEMINI_API_KEY=...            # https://aistudio.google.com/apikey
+# HUSH_LLM_MODEL 기본값 gemini-3.5-flash-lite
+# HUSH_LLM_ENABLED=false 로 키가 있어도 강제 비활성
+```
+
+Gemini structured output(`response_schema` = Pydantic + `response_mime_type="application/json"`)으로 구조화한다.
+
+- AI는 자연어를 허용 schema(`max_price` · `excluded_category` · `accessibility_required` · `latest_end_time`)의
+  draft candidate로 변환하고 한국어로 해석만 설명한다. 최종 결정·조건 완화·자동 승인은 하지 않는다
+  (`docs/architecture/06-ai-boundary.md`).
+- 사용자 입력은 `<participant_input>`으로 감싸 untrusted 데이터로 전달하고, 모델 출력은
+  `backend/hush/llm.py`의 type allowlist · 값 범위 · 시간 형식 검증을 통과해야 draft가 된다.
+- LLM 성공 시 응답·화면에 `parser_mode="LLM"`, `is_ai=true`, `model`을 표시한다.
+- 키가 없거나 API 오류·schema 위반·거부 시에는 규칙 기반 parser로 자동 fallback하며
+  `parser_mode="DEMO_RULE_PARSER"`, `is_ai=false`, `llm_fallback=true`를 표시한다. AI라고 과장하지 않는다.
+- 원문이 외부 LLM provider로 전송된다는 점은 UI 및 `docs/architecture/09-security-and-privacy.md`에 고지돼 있다.
 
 ## 현재 증명하는 것
 
@@ -38,7 +59,7 @@ uvicorn hush.main:app --app-dir backend --reload
 
 - 현재 ledger adapter는 local memory이며 UI에 `Demo local verification — not on-chain`이라고 표시한다.
 - invite code는 시연 fixture다. join 뒤 participant session은 매번 새 random token으로 발급되지만 production 인증을 대체하지 않는다.
-- 실제 LLM parsing, PostgreSQL persistence, transaction outbox, EVM RPC 배포는 다음 integration 단계다.
+- 자연어 구조화는 `GEMINI_API_KEY`가 있으면 실제 Google Gemini, 없으면 규칙 기반 parser로 동작한다. PostgreSQL persistence, transaction outbox, EVM RPC 배포는 다음 integration 단계다.
 - Contract가 아직 testnet에 배포되지 않았으므로 transaction hash나 explorer link를 만들지 않는다.
 
 이 한계를 숨기거나 `on-chain verified`로 표현하지 않는다.

@@ -53,7 +53,14 @@ byId("join").onclick = async () => {
 
 byId("parse").onclick = async () => {
   const data = await perform(() => request(`/api/demo/participants/${participant}/private-inputs/parse`, "POST", { source_text: byId("source-text").value }), "draft-output");
-  if (data) { draftId = data.draft_id; byId("confirm").disabled = false; }
+  if (data) {
+    draftId = data.draft_id;
+    byId("confirm").disabled = false;
+    const mode = data.is_ai
+      ? `AI 구조화 · ${data.model || "LLM"}`
+      : `규칙 파서${data.llm_fallback ? " (LLM fallback)" : ""}`;
+    byId("draft-output").textContent = `[${mode}]\n${data.notice || ""}\n\n` + JSON.stringify(data, null, 2);
+  }
 };
 byId("confirm").onclick = async () => {
   const data = await perform(() => request(`/api/demo/participants/${participant}/constraints/confirm`, "POST", { draft_id: draftId }), "draft-output");

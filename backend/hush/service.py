@@ -11,7 +11,7 @@ from typing import Any
 from .crypto import condition_commitment, hash_json, input_leaf, input_root, keccak256
 from .engine import decide
 from .fixtures import DEMO_CANDIDATES, DEMO_CONSTRAINTS
-from .parser import ParseError, parse_korean_constraint
+from .parser import ParseError, structure_constraint
 from .verification import verify_receipt_data
 
 
@@ -87,7 +87,7 @@ class DemoService:
         if self.room_status != "COLLECTING":
             raise DemoError(409, "INVALID_STATE", "현재는 새 조건을 입력할 수 없습니다.")
         try:
-            parsed = parse_korean_constraint(source_text)
+            parsed = structure_constraint(source_text)
         except ParseError as exc:
             raise DemoError(422, "AI_PARSE_FAILED", str(exc)) from exc
         draft_id = "draft-" + secrets.token_hex(8)
