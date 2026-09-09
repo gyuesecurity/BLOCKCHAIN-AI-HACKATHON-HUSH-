@@ -1,15 +1,29 @@
-# HUSH P0 아키텍처 명세
+# HUSH 구현 아키텍처 명세
 
-이 디렉터리는 HUSH P0 구현 계약이다. 제품 요구사항의 정본은 [HUSH-project-plan.md](../product/HUSH-project-plan.md)이며, 충돌할 경우 기획서가 우선한다. 이 문서는 P0만 정의하며 P1/P2 구현을 승인하지 않는다.
+제품 요구사항의 정본은 [HUSH-project-plan.md](../product/HUSH-project-plan.md)이며, 충돌할 경우 기획서가 우선한다. 기존 `00`~`11` 문서는 서류 심사 통과 후 진행할 7주 P0의 구현 계약이다. [12-pre-screening-demo.md](12-pre-screening-demo.md)는 이를 대체하거나 P0 계약을 변경하지 않는 3~4일짜리 thin vertical slice 구현 명세다.
+
+## HUSH Implementation Scope
+
+```mermaid
+flowchart TD
+  A[Stage A — Pre-Screening Demo<br/>3–4 days] -->|thin vertical slice| B[Stage B — 7-week P0<br/>Full HUSH Core Implementation]
+  B --> C[Stage C — P1<br/>Optional enhancements]
+  C --> D[P2<br/>Future work]
+```
+
+- **Stage A — Pre-Screening Demo:** 심사위원이 private input, AI 구조화와 사용자 승인, deterministic decision, private relaxation, receipt/verification의 핵심 흐름을 실제로 볼 수 있게 하는 축소 구현이다.
+- **Stage B — P0:** 현재 아키텍처가 정의하는 전체 P0를 7주 동안 구현한다. Demo의 생략 사항 때문에 P0 canonical contract가 축소되는 일은 없다.
+- **Stage C — P1 / P2:** 아래의 기존 경계를 유지한다.
 
 ## 읽는 순서와 문서 책임
 
-1. `00-scope.md`: P0 경계와 데모 계약
+1. `00-scope.md`: Stage A와 Stage B의 범위 경계 및 P0 계약
 2. `01-system-architecture.md`: 컴포넌트·신뢰·데이터 경계
 3. `02-domain-model.md`, `03-state-machine.md`: canonical 모델과 lifecycle
 4. `04-api-contract.md`: Frontend와 Backend의 REST 계약
 5. `05-decision-engine.md`~`07-blockchain-contract.md`: 계산·AI·검증 경계
-6. `08-frontend-flow.md`~`11-implementation-plan.md`: 화면·보호·실패·구현 순서
+6. `08-frontend-flow.md`~`11-implementation-plan.md`: 화면·보호·실패·P0 구현 순서
+7. `12-pre-screening-demo.md`: Stage A 전용 구현 명세, P0 대응 관계, Demo 일정
 
 ## 정본 lifecycle
 

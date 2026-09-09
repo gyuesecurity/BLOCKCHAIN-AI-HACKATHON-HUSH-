@@ -1,5 +1,17 @@
 # P0 범위
 
+## 구현 단계 경계
+
+이 문서는 **Stage B — 서류 심사 통과 후 7주 P0**의 canonical 범위를 정의한다. Stage A — **3~4일 Pre-Screening Demo**는 P0를 대체하거나 P0 범위를 축소하는 정의가 아니라, 계획된 P0의 핵심 경험을 실제로 보여 주는 thin vertical slice다. Demo의 구현 범위·축소·검증 표시는 [12-pre-screening-demo.md](12-pre-screening-demo.md)에만 정의하며, Demo에서 생략한 lifecycle, `ParticipantInput`, `EMPTY`, `input_set_root`, supersession, receipt 또는 security 계약은 이 P0 문서에서 삭제되거나 완화되지 않는다.
+
+```text
+Pre-Screening Demo (3–4 days)
+        ↓ thin vertical slice of planned P0
+7-week P0 (full canonical implementation)
+        ↓
+P1 optional enhancements → P2 future work
+```
+
 ## 프로젝트 목표와 P0 목표
 
 HUSH는 참가자가 raw private condition이나 개인 사유를 다른 참가자에게 공개하지 않고 집단 결정을 만들며, 승인한 조건 버전이 최종 결정에 반영되었음을 독립적으로 검증하게 한다. P0 Goal은 4인 식당 데모에서 canonical lifecycle 전체를 반복 가능하게 보이는 것이다.

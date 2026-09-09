@@ -1,5 +1,7 @@
 # 구현 계획
 
+이 구현 계획은 **서류 심사 통과 후 진행하는 7주 P0 구현**을 설명한다. 3~4일 Pre-Screening Demo의 별도 구현 계획은 [12-pre-screening-demo.md](12-pre-screening-demo.md)에 있으며, 두 계획을 섞지 않는다.
+
 아래는 설계 확정 뒤 만들 vertical slice 순서이며 실제 Issue 생성이나 구현을 뜻하지 않는다.
 
 | Phase | Goal·Dependencies | 예상 module | Acceptance criteria·Tests required |
