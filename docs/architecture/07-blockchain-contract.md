@@ -18,7 +18,7 @@ Blockchain은 AI의 정답이나 Engine의 계산 정확성을 증명하지 않�
 
 `input_set_leaf = keccak256(canonical_json({decision_room_id,decision_run_id,participant_input_id,input_mode,constraint_version_id,condition_commitment}))`다. `constraint_version_id`는 `CONSTRAINED`이면 required이고 `EMPTY`이면 canonical JSON의 `null`이다. leaf는 DecisionRun에 bind되므로 다른 room/run에서 replay할 수 없다. `CONSTRAINED`의 `participant_input_id`는 해당 `ConstraintVersion`에 1:1로 연결된 immutable input ID이고, `EMPTY`의 `participant_input_id`는 explicit empty declaration의 비공개 ID다. P0 `input_set_root`는 frozen roster의 모든 `ParticipantInput` leaf를 byte-lexicographic으로 정렬한 배열의 canonical JSON을 Keccak-256한 값이다. identical leaf가 입력되면 duplicate는 validation failure이며 배열에서 제거하거나 합치지 않는다. participant join 순서나 Constraint 제출 순서는 root에 영향을 주지 않는다. Merkle Tree는 사용하지 않는다.
 
-`final_decision_hash = keccak256(canonical_json({final_decision_id,candidate_id,input_set_root,candidate_dataset_hash,engine_version,engine_code_hash}))`이며 `decision_commitment = keccak256(canonical_json({decision_room_id,input_set_root,candidate_dataset_hash,engine_version,engine_code_hash,final_decision_hash}))`다.
+`final_decision_hash = keccak256(canonical_json({final_decision_id,candidate_id,input_set_root,candidate_dataset_hash,engine_version,engine_code_hash}))`다. Local Demo의 `decision_commitment`는 canonical JSON을 사용한다. EVM record의 `decision_commitment`는 Contract가 `keccak256(abi.encode(keccak256("HUSH_DECISION_V1"), block.chainid, address(this), decision_room_id, input_set_root, candidate_dataset_hash, keccak256(bytes(engine_version)), engine_code_hash, final_decision_hash))`로 직접 계산·검사한다. 따라서 다른 chain 또는 contract record로 replay할 수 없으며 local/on-chain verification mode를 섞지 않는다.
 
 ## Smart Contract interface
 

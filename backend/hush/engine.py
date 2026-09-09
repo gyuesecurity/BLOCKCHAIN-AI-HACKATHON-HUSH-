@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import combinations
 from typing import Any
 
 
@@ -80,19 +81,25 @@ def _minimum_numeric_relaxation(
     return min(proposals, default=(0, 0, "", None))[-1]
 
 
+def _minimal_conflict(constraints: list[dict[str, Any]], candidates: list[dict[str, Any]]) -> tuple[str, ...]:
+    hard = sorted(
+        (item for item in constraints if item["priority"] == "HARD"),
+        key=lambda item: item["constraint_id"],
+    )
+    for size in range(1, len(hard) + 1):
+        for subset in combinations(hard, size):
+            if not _feasible(candidates, list(subset)):
+                return tuple(item["constraint_id"] for item in subset)
+    return ()
+
+
 def decide(candidates: list[dict[str, Any]], constraints: list[dict[str, Any]]) -> EngineResult:
     feasible = _feasible(candidates, constraints)
     if not feasible:
-        eliminating = []
-        for item in sorted(constraints, key=lambda value: value["constraint_id"]):
-            if item["priority"] == "HARD" and any(
-                not _hard_satisfied(candidate, item) for candidate in candidates
-            ):
-                eliminating.append(item["constraint_id"])
         return EngineResult(
             result_type="INFEASIBLE",
             feasible_candidate_ids=(),
-            conflicting_constraint_ids=tuple(eliminating),
+            conflicting_constraint_ids=_minimal_conflict(constraints, candidates),
             proposal=_minimum_numeric_relaxation(candidates, constraints),
         )
     ranked = sorted(
@@ -107,4 +114,3 @@ def decide(candidates: list[dict[str, Any]], constraints: list[dict[str, Any]]) 
         feasible_candidate_ids=tuple(item["candidate_id"] for item in ranked),
         selected_candidate_id=ranked[0]["candidate_id"],
     )
-

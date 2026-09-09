@@ -1,6 +1,10 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "hush-demo"
-version = "0.1.0"
+version = "0.2.0"
 description = "HUSH privacy-preserving group decision demo"
 requires-python = ">=3.11"
 dependencies = [
@@ -16,3 +20,6 @@ dev = ["httpx>=0.27,<1", "pytest>=8,<9"]
 pythonpath = ["backend"]
 testpaths = ["tests"]
 
+[tool.setuptools.packages.find]
+where = ["backend"]
+include = ["hush*"]
