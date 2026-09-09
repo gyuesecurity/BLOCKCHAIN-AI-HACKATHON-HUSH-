@@ -1,0 +1,17 @@
+# Provenance hashes (engine_code_hash, dataset hash, receipt fields) are computed
+# over raw file bytes. Force LF on every platform so those hashes are reproducible
+# regardless of the checkout OS or core.autocrlf setting.
+* text=auto eol=lf
+
+# Shell scripts must stay LF to remain executable.
+*.sh text eol=lf
+
+# Binary assets (none today; keep git from touching them if added later).
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
