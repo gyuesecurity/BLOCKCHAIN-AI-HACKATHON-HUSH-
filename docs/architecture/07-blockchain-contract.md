@@ -12,6 +12,8 @@ Blockchain은 AI의 정답이나 Engine의 계산 정확성을 증명하지 않�
 
 ## 정본 serialization과 hash
 
+모든 hash payload는 `protocol:"HUSH"`, `schema_version:"1"` domain separator를 포함한다. public-chain record와 연결되는 payload는 배포가 정해진 뒤 `chain_id`와 `verifying_contract`도 포함해 다른 network/contract에서의 replay를 막는다. `salt`와 bytes 값은 소문자 `0x`-prefixed hex, ID는 UTF-8 string, 정수는 JSON integer로 표현한다. 구현체는 `test-vectors/hash-v1.json`의 canonical bytes와 expected hash를 공통으로 통과해야 한다.
+
 `condition_commitment = keccak256(canonical_json({decision_room_id, participant_pseudonym, constraint_id, constraint_version, constraint_type, priority, constraint_value, salt}))`다. `salt`는 cryptographically random 32-byte 값이며 version마다 새로 생성하고 encrypted off-chain storage에만 둔다. raw deterministic hash를 쓰지 않아 dictionary attack이 가능해지는 것을 금지한다.
 
 `input_set_leaf = keccak256(canonical_json({decision_room_id,decision_run_id,participant_input_id,input_mode,constraint_version_id,condition_commitment}))`다. `constraint_version_id`는 `CONSTRAINED`이면 required이고 `EMPTY`이면 canonical JSON의 `null`이다. leaf는 DecisionRun에 bind되므로 다른 room/run에서 replay할 수 없다. `CONSTRAINED`의 `participant_input_id`는 해당 `ConstraintVersion`에 1:1로 연결된 immutable input ID이고, `EMPTY`의 `participant_input_id`는 explicit empty declaration의 비공개 ID다. P0 `input_set_root`는 frozen roster의 모든 `ParticipantInput` leaf를 byte-lexicographic으로 정렬한 배열의 canonical JSON을 Keccak-256한 값이다. identical leaf가 입력되면 duplicate는 validation failure이며 배열에서 제거하거나 합치지 않는다. participant join 순서나 Constraint 제출 순서는 root에 영향을 주지 않는다. Merkle Tree는 사용하지 않는다.
@@ -38,6 +40,8 @@ Blockchain은 AI의 정답이나 Engine의 계산 정확성을 증명하지 않�
 Engine output과 고정 dataset이 일치할 때만 `finalizeInputSet`과 `commitDecision`을 호출하며, finalization도 required on-chain record가 `CONFIRMED`일 때만 진행한다.
 
 participant는 receipt의 모든 `participant_inputs` entry를 확인한다. 각 `CONSTRAINED` entry는 자기 `constraint_value`와 salt로 `condition_commitment`를, `EMPTY` entry는 자기 canonical empty payload와 salt로 `condition_commitment`를 로컬 재계산할 수 있다. 이어 각 entry의 run-bound `input_set_leaf`를 재계산하고 모든 내 leaf가 `input_set_leaves`에 존재하는지 확인한다. 전체 leaf set을 byte-lexicographic sort 및 canonical serialize해 `input_set_root`를 재계산한다. P0는 독립 검증을 위해 전체 leaf set을 receipt 수신자에게 제공하지만, raw constraint, private reason, salt, participant identity와 다른 leaf의 직접 mapping은 제공하지 않는다. 이는 제한적인 metadata disclosure이며 소규모 room의 추론 위험을 완전히 없애지 못한다. 마지막으로 explorer/RPC에서 root, dataset hash, Engine identity, `final_decision_hash`, `decision_commitment`을 비교한다.
+
+독립 재현을 위해 receipt에는 content-addressed 또는 immutable release의 `candidate_dataset_uri`, `engine_artifact_uri`, `verification_script_uri`, `engine_git_commit`을 함께 제공한다. `engine_code_hash`는 Git commit 문자열이 아니라 공개한 Engine source archive bytes의 Keccak-256이다. Git commit과 artifact hash는 별도 field로 유지한다.
 
 ## 향후 확장
 

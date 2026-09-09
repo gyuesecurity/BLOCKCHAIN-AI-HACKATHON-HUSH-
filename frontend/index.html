@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HUSH — Private Consensus Demo</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="eyebrow">BLOCKCHAIN + AI HACKATHON</span>
+        <h1>HUSH</h1>
+        <p>비밀은 지키고, 반영됐다는 사실은 증명한다.</p>
+      </header>
+
+      <section class="status-card">
+        <div>
+          <span class="label">DECISION ROOM</span>
+          <h2 id="room-title">불러오는 중…</h2>
+        </div>
+        <span id="room-status" class="badge">LOADING</span>
+      </section>
+
+      <section class="steps">
+        <article>
+          <span class="step-number">01</span>
+          <h3>Private Input</h3>
+          <p>네 참가자의 조건을 서로 공개하지 않고 확정합니다.</p>
+          <button id="seed">데모 입력 4개 확정</button>
+        </article>
+        <article>
+          <span class="step-number">02</span>
+          <h3>Decision</h3>
+          <p>고정된 후보와 조건으로 결정 엔진을 실행합니다.</p>
+          <button id="run">결정 엔진 실행</button>
+        </article>
+        <article>
+          <span class="step-number">03</span>
+          <h3>Private Negotiation</h3>
+          <p>A에게만 최소 완화안을 보여주고 직접 승인받습니다.</p>
+          <button id="proposal">A의 비공개 제안 확인</button>
+        </article>
+        <article>
+          <span class="step-number">04</span>
+          <h3>Verification</h3>
+          <p>입력 집합·데이터셋·엔진 코드 hash를 다시 계산합니다.</p>
+          <button id="verify">영수증 검증</button>
+        </article>
+      </section>
+
+      <section class="output-card">
+        <div class="output-head">
+          <span class="label">LIVE RESULT</span>
+          <button id="reset" class="ghost">초기화</button>
+        </div>
+        <pre id="output">데모 입력을 확정해 시작하세요.</pre>
+      </section>
+
+      <aside>
+        <strong>Demo local verification — not on-chain</strong>
+        <span>현재 화면은 정직한 로컬 검증 경로입니다. Contract 배포 후 실제 network와 explorer 정보로 교체됩니다.</span>
+      </aside>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

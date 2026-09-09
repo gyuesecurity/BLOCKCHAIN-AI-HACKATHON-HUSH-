@@ -2,6 +2,8 @@
 
 Minimum Necessary Disclosure를 기본 규칙으로 한다. API authorization은 “같은 room에 속함”이 아니라 “해당 private object의 owner임”을 요구한다.
 
+P0의 confidentiality boundary는 다른 participant와 public blockchain을 우선 대상으로 한다. Backend/Engine은 계산을 위해 structured private value를 처리하며 외부 LLM을 사용할 때 provider가 raw text를 처리할 수 있다. encryption at rest는 서버 운영자로부터의 기밀성을 보장하지 않는다. 운영자에 대한 완전한 confidentiality는 on-device model, TEE 또는 MPC를 도입하는 P2 범위다. 운영자로부터의 `Independent Verification`은 결과 provenance의 integrity 의미이며 confidentiality와 구분한다.
+
 | Threat | Impact·Boundary | Mitigation | Residual Risk |
 |---|---|---|---|
 | Private constraint leakage | 타 participant/운영자 노출 | owner-scoped API, shared safe projection, encrypted storage | 소규모 맥락 추론 |

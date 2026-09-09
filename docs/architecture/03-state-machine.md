@@ -68,6 +68,8 @@ stateDiagram-v2
 
 `DecisionRun`: `QUEUED → RUNNING → FEASIBLE | INFEASIBLE | FAILED`. 생성 시 roster와 eligible input을 freeze한다. `FEASIBLE`만 `FinalDecision`을 만들고 `INFEASIBLE`만 `Conflict`/proposal 탐색을 시작한다. `FAILED`는 terminal이며 원 input을 변경하지 않는다.
 
+eligibility는 `DecisionRun` 생성 transaction에서 한 번만 검사한다. 생성 이후 version이 `SUPERSEDED` 또는 `RETIRED`가 되더라도 이미 frozen된 run은 immutable snapshot을 계속 사용한다. Engine은 실행 시점의 현재 DB state를 다시 조회해 frozen version을 제외하지 않는다.
+
 `RelaxationProposal`: `PROPOSED → ACCEPTED | REJECTED | EXPIRED`. `ACCEPTED`에는 대상 participant의 `UserApproval`이 필수이며, 새 version commit 실패 시 proposal은 `ACCEPTED`, 새 version은 `PENDING_ACTIVATION`, Commitment는 `FAILED`, room은 `NEGOTIATING`에 남는다. `REJECTED`와 `EXPIRED`는 terminal이다.
 
 `FinalDecision`: `PENDING_COMMITMENT → COMMITTED | COMMITMENT_FAILED`. `COMMITTED`만 shared final result와 receipt를 허용한다. `COMMITMENT_FAILED`는 retry할 수 있으나 선택 값과 provenance는 바꾸지 않는다.
@@ -86,3 +88,4 @@ stateDiagram-v2
 - **Invariant H:** `EMPTY` participant도 canonical EMPTY entry로 input set inclusion을 검증할 수 있다.
 - **Invariant I:** Receipt와 shared API는 다른 participant의 raw private input, private reason, salt를 공개하지 않는다.
 - **Invariant J:** participant private API는 해당 participant session만 접근할 수 있고 Shared Room API는 participant-specific relaxation target을 노출하지 않는다.
+- **Invariant K:** P0에서 유효한 relaxation이 없거나 모든 proposal이 거절되면 room은 `CLOSED`다. 재입력은 같은 room을 되살리지 않고 새 DecisionRoom에서 시작한다.

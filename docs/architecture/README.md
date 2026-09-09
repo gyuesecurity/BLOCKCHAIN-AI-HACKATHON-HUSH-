@@ -1,6 +1,6 @@
 # HUSH 구현 아키텍처 명세
 
-제품 요구사항의 정본은 [HUSH-project-plan.md](../product/HUSH-project-plan.md)이며, 충돌할 경우 기획서가 우선한다. 기존 `00`~`11` 문서는 서류 심사 통과 후 진행할 7주 P0의 구현 계약이다. [12-pre-screening-demo.md](12-pre-screening-demo.md)는 이를 대체하거나 P0 계약을 변경하지 않는 3~4일짜리 thin vertical slice 구현 명세다.
+제품 문제·사용자 가치의 정본은 [HUSH-project-plan.md](../product/HUSH-project-plan.md)다. 구현 중 field, lifecycle, API, hashing 규칙이 충돌하면 이 디렉터리의 해당 기술 명세가 우선한다. 범위는 `00-scope.md`, domain과 상태는 `02`~`03`, API는 `04`, 계산은 `05`, hashing과 contract는 `07`이 각각 정본이다. [12-pre-screening-demo.md](12-pre-screening-demo.md)는 이를 대체하거나 P0 계약을 변경하지 않는 3~4일짜리 thin vertical slice 구현 명세다.
 
 ## HUSH Implementation Scope
 
@@ -69,4 +69,9 @@ P0 `ParticipantReceipt`은 다중 `participant_inputs`와 root 재계산용 `inp
 
 ## OPEN DECISION
 
-없음. 제품 의미를 바꾸지 않는 retry transport, encryption provider, polling 주기 같은 세부사항은 구현 시 IMPLEMENTATION DECISION으로 정한다.
+- 실제 Demo EVM network와 `chain_id`
+- relayer key의 보관·회전 방식과 production 권한 모델
+- encrypted private storage provider와 보관·삭제 기간
+- 최종 Engine artifact 형식(source archive 또는 container image)
+
+결정 전까지 Demo는 `verification_mode=LOCAL`을 명시하고 on-chain 검증으로 표시하지 않는다.

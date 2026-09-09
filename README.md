@@ -166,10 +166,30 @@ P0/P1/P2의 정확한 경계는 [Scope](docs/architecture/00-scope.md)를 따릅
 
 ```text
 .
-├── README.md
-└── docs/
-    ├── architecture/  # canonical architecture, contracts, implementation guidance
-    └── product/       # product plan and project narrative
+├── backend/hush/      # FastAPI orchestration, deterministic Engine, receipt verification
+├── contracts/         # immutable Solidity Decision Registry
+├── fixtures/          # versioned Demo candidate dataset
+├── frontend/          # mobile-friendly single-page Demo UI
+├── scripts/           # independent local receipt verifier
+├── tests/             # Engine, privacy boundary and E2E tests
+└── docs/              # product and canonical architecture contracts
+```
+
+## Run the Demo
+
+Python 3.11 이상이 필요합니다.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e '.[dev]'
+uvicorn hush.main:app --app-dir backend --reload
+```
+
+브라우저에서 `http://127.0.0.1:8000`을 열고 `입력 확정 → 결정 실행 → A의 비공개 제안 승인 → 영수증 검증` 순서로 진행합니다. 현재 구현은 `Demo local verification — not on-chain`을 명시합니다. `contracts/HushDecisionRegistry.sol` 배포와 RPC adapter 연결 전에는 온체인 검증으로 표현하지 않습니다.
+
+```bash
+pytest
 ```
 
 ## Architecture Documents
