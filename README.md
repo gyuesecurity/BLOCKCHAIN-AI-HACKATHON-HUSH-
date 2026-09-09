@@ -192,6 +192,8 @@ Demo invite code와 입력 예시는 [실행 데모 문서](docs/DEMO.md)에 있
 
 ```bash
 pytest
+# 전체 Python·JavaScript·Solidity 검사
+./scripts/check.sh
 ```
 
 Container 실행은 다음과 같습니다. 관리자 fixture/reset API가 필요할 때만 `HUSH_DEMO_ADMIN_KEY`를 별도 secret으로 설정합니다.
