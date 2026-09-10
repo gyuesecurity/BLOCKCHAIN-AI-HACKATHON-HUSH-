@@ -184,9 +184,11 @@ Python 3.11 이상이 필요합니다.
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e '.[dev]'
+pip install -e '.[dev,llm,chain]'   # 실제 Gemini(llm)·EVM testnet(chain) 경로 포함. 최소 설치는 '.[dev]'
 uvicorn hush.main:app --app-dir backend --reload
 ```
+
+실제 LLM을 쓰려면 `pip install -e '.[dev,llm]'` 후 `GEMINI_API_KEY`를 설정합니다. `.[dev]`만 설치하면 `google-genai` 미설치로 규칙 파서에 fallback합니다(honest 표기). 온체인 기록은 `.[chain]` + `HUSH_CHAIN_*` 설정 시 활성화됩니다.
 
 브라우저에서 공용 화면 `http://127.0.0.1:8000`과 참가자 전용 화면 `http://127.0.0.1:8000/participant`를 엽니다. A/B/C/D는 각자 전달받은 Demo invite code로 join하고 `자연어 입력 → 구조화 결과 확인 → 확정`을 수행합니다. 네 입력이 모두 확정되면 참가자가 Engine을 실행하고, A의 private 화면에서만 완화안을 승인한 뒤 재실행과 영수증 검증을 진행합니다. 현재 구현은 `Demo local verification — not on-chain`을 명시합니다.
 
@@ -204,6 +206,23 @@ Container 실행은 다음과 같습니다. 관리자 fixture/reset API가 필�
 docker build -t hush-demo .
 docker run --rm -p 8000:8000 hush-demo
 ```
+
+### 영구 저장 · at-rest 암호화
+
+방 상태는 매 변경마다 DB에 스냅샷되고 시작 시 복원되므로 재시작해도 진행 중인 결정·영수증을 잃지 않습니다.
+
+- 기본: repo 루트 `hush-demo.db` (SQLite, 인프라 0). `HUSH_DATABASE_URL`로 임의의 SQLAlchemy URL 지정 가능.
+- `HUSH_STATE_KEY`(Fernet 키)를 설정하면 저장 blob 전체를 at-rest 암호화합니다(참가자 salt·원값·세션 토큰·원문 포함). 미설정 시 평문 저장 + 경고 로그. 재시작 후 복호화하려면 같은 키를 유지해야 합니다.
+  - 키 생성: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
+- `/health`가 현재 `persistence`(sqlite/postgresql)와 `at_rest_encryption`(fernet/none)을 보고합니다.
+
+### Railway 배포
+
+`Dockerfile`이 `$PORT`를 존중하고 `.[postgres]`(psycopg 드라이버)를 포함합니다.
+
+1. Railway 프로젝트에 이 repo 연결 → Postgres 플러그인 추가 (Railway가 `DATABASE_URL` 주입, 자동 인식).
+2. 서비스 변수에 `HUSH_STATE_KEY`, `HUSH_DEMO_ADMIN_KEY`, (선택) `GEMINI_API_KEY`, `HUSH_CHAIN_*` 설정.
+3. 배포 후 `https://<app>.up.railway.app/health`로 `persistence: postgresql` 확인.
 
 ## Architecture Documents
 

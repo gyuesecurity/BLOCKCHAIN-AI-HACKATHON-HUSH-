@@ -1,9 +1,11 @@
+import io
 import os
 import secrets
 from pathlib import Path
 
+import segno
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -64,9 +66,42 @@ def participant_page() -> FileResponse:
     return FileResponse(frontend / "participant.html")
 
 
+@app.get("/invite", include_in_schema=False)
+def invite_page() -> FileResponse:
+    return FileResponse(frontend / "invite.html")
+
+
+@app.get("/api/demo/invites")
+def invites(request: Request) -> dict:
+    """Join URLs for the four demo participants (invite codes are demo fixtures)."""
+    base = str(request.base_url)
+    return {
+        "participants": [
+            {
+                "participant": key,
+                "invite_code": code,
+                "join_url": f"{base}participant?p={key}&code={code}",
+            }
+            for key, code in service.invite_codes.items()
+        ]
+    }
+
+
+@app.get("/api/demo/invite-qr/{participant}", include_in_schema=False)
+def invite_qr(participant: str, request: Request) -> Response:
+    key = participant.upper()
+    code = service.invite_codes.get(key)
+    if code is None:
+        raise DemoError(404, "NOT_FOUND", "참가자를 찾을 수 없습니다.")
+    join_url = f"{request.base_url}participant?p={key}&code={code}"
+    buffer = io.BytesIO()
+    segno.make(join_url, error="m").save(buffer, kind="svg", scale=6, border=2, dark="#07100d", light="#ffffff")
+    return Response(content=buffer.getvalue(), media_type="image/svg+xml")
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {"status": "ok", **service.store_info()}
 
 
 @app.get("/api/demo/state")

@@ -43,5 +43,17 @@ textarea { resize: vertical; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
 button:disabled { cursor: not-allowed; filter: grayscale(1); opacity: .45; }
 .back-link { display: inline-block; margin-top: 18px; color: var(--mint); }
+.chain-box { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin: 14px 0; background: #08130f; }
+.chain-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.chain-status-pending { background: #ffd479; }
+.chain-status-failed { background: #ff8f8f; }
+.chain-status-local { background: var(--muted); }
+.chain-meta { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; margin: 10px 0 0; }
+.chain-txs { margin: 12px 0 0; padding-left: 18px; color: #cce9dc; font-size: 13px; line-height: 1.7; }
+.chain-txs a { color: var(--mint); overflow-wrap: anywhere; }
+.chain-txs .pending { color: var(--muted); }
+.chain-verify { margin: 12px 0 0; font-weight: 700; font-size: 13px; }
+.chain-verify.ok { color: var(--mint); }
+.chain-verify.bad { color: #ffd479; }
 @media (max-width: 850px) { .steps { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 540px) { main { padding: 44px 0; } .steps { grid-template-columns: 1fr; } .status-card, aside { align-items: flex-start; flex-direction: column; } }

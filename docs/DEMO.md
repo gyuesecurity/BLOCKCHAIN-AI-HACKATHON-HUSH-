@@ -7,11 +7,20 @@
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e '.[dev]'
+pip install -e '.[dev,llm,chain]'   # 실제 Gemini + EVM testnet 경로 포함
 uvicorn hush.main:app --app-dir backend --reload
 ```
 
-공용 화면은 `http://127.0.0.1:8000`, 참가자 개인 화면은 `/participant`, OpenAPI 문서는 `/docs`다. 네 참가자는 서로 다른 브라우저 또는 시크릿 창에서 다음 Demo invite를 사용한다.
+`.[dev]`만 설치하면 `google-genai`가 없어 자연어 구조화가 규칙 파서로만 동작한다(`is_ai=false`).
+실제 Gemini 데모에는 `.[llm]`과 `GEMINI_API_KEY`가 필요하다. 무료 티어 키는 rate limit(429)이
+낮아 4명 입력을 몰아서 넣으면 일부가 규칙 파서로 fallback할 수 있다(`llm_fallback=true`로 정직하게 표기).
+입력을 몇 초씩 띄우거나 유료 키를 쓰면 안정적이다.
+
+공용 화면은 `http://127.0.0.1:8000`, 참가자 개인 화면은 `/participant`, OpenAPI 문서는 `/docs`다.
+`/invite` 페이지에 4명분 QR이 있다 — 각자 휴대폰으로 자기 QR을 스캔하면 `/participant?p=..&code=..`가
+열리며 참가자·초대 코드가 자동 입력되고 바로 join된다. 4대 휴대폰 데모는 서버를 LAN IP나 터널
+(ngrok/cloudflared)로 노출한 뒤 `/invite`를 띄워 스캔하면 된다. QR 없이 서로 다른 브라우저/시크릿
+창에서 아래 코드를 직접 입력해도 된다.
 
 | Participant | Invite code | 자연어 입력 예시 |
 |---|---|---|
@@ -90,7 +99,10 @@ uvicorn hush.main:app --app-dir backend
 ## 정직한 한계
 
 - chain 미설정 시 ledger adapter는 local memory이며 UI에 `Demo local verification — not on-chain`이라고 표시한다.
-- on-chain은 **최종 결정 커밋 1건**만 기록한다. 참가자별 condition commitment on-chain 기록, PostgreSQL persistence, at-rest 암호화, 서버 배포, CI는 P0 범위다.
+- on-chain은 **최종 결정 커밋 1건**만 기록한다. 참가자별 condition commitment on-chain 기록은 P0 범위다.
+- 방 상태는 재시작에도 유지된다: 기본 SQLite(`hush-demo.db`), `HUSH_DATABASE_URL`로 Postgres 전환.
+  `HUSH_STATE_KEY`(Fernet)가 있으면 저장 blob 전체가 at-rest 암호화된다(salt·원값·세션 토큰·원문 포함).
+  키가 없으면 평문 저장 + 경고 로그.
 - invite code는 시연 fixture다. join 뒤 participant session은 매번 새 random token으로 발급되지만 production 인증을 대체하지 않는다.
 - 자연어 구조화는 `GEMINI_API_KEY`가 있으면 실제 Google Gemini, 없으면 규칙 기반 parser로 동작한다.
 - chain이 미설정이거나 RPC/tx가 실패하면 transaction hash나 explorer link를 만들지 않는다.

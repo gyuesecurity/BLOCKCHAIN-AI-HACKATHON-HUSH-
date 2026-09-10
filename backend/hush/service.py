@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import logging
 import secrets
 import threading
 from dataclasses import asdict
@@ -14,10 +15,29 @@ from .crypto import condition_commitment, hash_json, input_leaf, input_root, kec
 from .engine import decide
 from .fixtures import DEMO_CANDIDATES, DEMO_CONSTRAINTS
 from .parser import ParseError, structure_constraint
+from .store import StateFormatError, StateStore
 from .verification import verify_receipt_data
+
+logger = logging.getLogger("hush.service")
 
 ENGINE_VERSION = "0.2.0"
 LOCAL_LABEL = "Demo local verification — not on-chain"
+
+# Everything mutated by the state machine. Snapshotted to the store after every
+# mutation and restored on startup so a restart never loses an in-flight
+# decision or receipt.
+_STATE_FIELDS = (
+    "room_status",
+    "participants",
+    "sessions",
+    "drafts",
+    "constraint_history",
+    "runs",
+    "proposal",
+    "approvals",
+    "final_record",
+    "chain_room_salt",
+)
 
 
 def _verification_label(provenance: dict[str, Any] | None) -> str:
@@ -69,10 +89,14 @@ class DemoError(Exception):
 
 
 def synchronized(method):
+    """Serialize the mutation and snapshot the resulting state to the store."""
+
     @wraps(method)
     def wrapped(self, *args, **kwargs):
         with self._lock:
-            return method(self, *args, **kwargs)
+            result = method(self, *args, **kwargs)
+            self._persist()
+            return result
 
     return wrapped
 
@@ -81,9 +105,37 @@ class DemoService:
     room_id = "hush-demo-dinner-001"
     invite_codes = {key: f"HUSH-{key}-2026" for key in ("A", "B", "C", "D")}
 
-    def __init__(self) -> None:
+    def __init__(self, store: StateStore | None = None) -> None:
         self._lock = RLock()
-        self.reset()
+        self._store = store if store is not None else StateStore()
+        with self._lock:
+            restored = None
+            try:
+                restored = self._store.load(self.room_id)
+            except StateFormatError:
+                logger.exception("저장된 상태를 복원하지 못했습니다 — 새로 시작합니다.")
+            if restored is not None:
+                self._restore(restored)
+                logger.info("이전 방 상태를 복원했습니다 (status=%s).", self.room_status)
+            else:
+                self.reset()
+
+    # -- persistence -------------------------------------------------------------
+    def _snapshot(self) -> dict[str, Any]:
+        return {field: getattr(self, field) for field in _STATE_FIELDS}
+
+    def _restore(self, snapshot: dict[str, Any]) -> None:
+        for field in _STATE_FIELDS:
+            setattr(self, field, snapshot.get(field))
+
+    def _persist(self) -> None:
+        try:
+            self._store.save(self.room_id, self._snapshot())
+        except Exception:  # persistence must never break the demo flow
+            logger.exception("방 상태 저장에 실패했습니다 (계속 진행).")
+
+    def store_info(self) -> dict[str, Any]:
+        return self._store.describe()
 
     @synchronized
     def reset(self) -> dict[str, Any]:
@@ -475,6 +527,7 @@ class DemoService:
                 if self.final_record and self.final_record.get("final_decision_id") == final_id:
                     self.final_record["chain_provenance"] = result
                     self.final_record["verification_label"] = _verification_label(result)
+                    self._persist()
 
         threading.Thread(target=worker, name="hush-onchain-anchor", daemon=True).start()
         return {

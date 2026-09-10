@@ -39,6 +39,12 @@
         <section class="output-card form-card">
           <span class="label">PARTICIPANT RECEIPT</span>
           <div class="actions"><button id="receipt">영수증 보기</button><button id="verify">무결성 검증</button><button id="export" class="ghost">검증용 JSON 내보내기</button></div>
+          <div id="chain-box" class="chain-box" hidden>
+            <div class="chain-head"><span class="label">ON-CHAIN PROVENANCE</span><span id="chain-status" class="badge"></span></div>
+            <p id="chain-meta" class="chain-meta"></p>
+            <ol id="chain-txs" class="chain-txs"></ol>
+            <p id="chain-verify" class="chain-verify" hidden></p>
+          </div>
           <pre id="receipt-output">최종 결정 이후 확인할 수 있습니다.</pre>
         </section>
       </div>

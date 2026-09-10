@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HUSH — 참가자 초대</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="participant-main">
+      <header>
+        <span class="eyebrow">PARTICIPANT INVITES</span>
+        <h1 class="small-title">HUSH</h1>
+        <p>각 참가자가 자기 QR을 휴대폰으로 스캔하면 개인 화면이 열리고 초대 코드가 자동 입력됩니다.</p>
+      </header>
+      <section class="output-card form-card">
+        <span class="label">SCAN TO JOIN</span>
+        <div id="invite-grid" class="invite-grid">불러오는 중…</div>
+        <p id="invite-hint" class="muted-hint"></p>
+      </section>
+      <a class="back-link" href="/">← 공용 Decision Room</a>
+    </main>
+    <style>
+      .invite-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+      .invite-card { border: 1px solid var(--line); border-radius: 16px; padding: 18px; text-align: center; background: #08130f; }
+      .invite-card h3 { margin: 0 0 12px; font-size: 20px; }
+      .invite-card img { width: 100%; max-width: 220px; height: auto; border-radius: 10px; background: #fff; }
+      .invite-card code { display: block; margin-top: 10px; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+      .invite-card a { display: inline-block; margin-top: 8px; color: var(--mint); font-size: 12px; }
+      .muted-hint { color: var(--muted); font-size: 13px; margin-top: 16px; }
+      @media (max-width: 540px) { .invite-grid { grid-template-columns: 1fr; } }
+    </style>
+    <script src="/static/invite.js"></script>
+  </body>
+</html>

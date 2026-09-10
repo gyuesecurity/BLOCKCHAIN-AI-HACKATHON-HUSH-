@@ -104,6 +104,28 @@ def test_admin_endpoints_are_not_public():
     assert client.post("/api/demo/admin/seed-confirmed-inputs").status_code == 404
 
 
+def test_invite_endpoints_expose_join_urls_and_qr():
+    body = client.get("/api/demo/invites").json()
+    by_participant = {item["participant"]: item for item in body["participants"]}
+    assert set(by_participant) == {"A", "B", "C", "D"}
+    assert by_participant["A"]["invite_code"] == "HUSH-A-2026"
+    assert by_participant["A"]["join_url"].endswith("/participant?p=A&code=HUSH-A-2026")
+
+    svg = client.get("/api/demo/invite-qr/a")
+    assert svg.status_code == 200
+    assert svg.headers["content-type"].startswith("image/svg+xml")
+    assert b"<svg" in svg.content
+
+    assert client.get("/api/demo/invite-qr/Z").status_code == 404
+
+
+def test_health_reports_persistence_backend():
+    body = client.get("/health").json()
+    assert body["status"] == "ok"
+    assert body["persistence"] == "sqlite"
+    assert body["at_rest_encryption"] in {"none", "fernet"}
+
+
 @pytest.mark.parametrize(
     "tamper",
     [
