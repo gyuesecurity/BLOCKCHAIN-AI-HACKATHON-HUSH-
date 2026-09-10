@@ -218,11 +218,11 @@ docker run --rm -p 8000:8000 hush-demo
 
 ### Railway 배포
 
-`Dockerfile`이 `$PORT`를 존중하고 `.[postgres]`(psycopg 드라이버)를 포함합니다.
+`Dockerfile` + `railway.json`이 준비돼 있습니다. 절차·환경변수·문제 해결은 [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
-1. Railway 프로젝트에 이 repo 연결 → Postgres 플러그인 추가 (Railway가 `DATABASE_URL` 주입, 자동 인식).
-2. 서비스 변수에 `HUSH_STATE_KEY`, `HUSH_DEMO_ADMIN_KEY`, (선택) `GEMINI_API_KEY`, `HUSH_CHAIN_*` 설정.
-3. 배포 후 `https://<app>.up.railway.app/health`로 `persistence: postgresql` 확인.
+1. Railway 프로젝트에 이 repo 연결 (Dockerfile 자동 감지) → Postgres 추가 (`DATABASE_URL` 자동 인식).
+2. 서비스 변수에 `HUSH_STATE_KEY`, `HUSH_DEMO_ADMIN_KEY`, (선택) `GEMINI_API_KEY`, `HUSH_CHAIN_*` 설정. `PORT`는 건드리지 않습니다.
+3. Generate Domain → `https://<app>.up.railway.app/health`로 `persistence: postgresql` 확인.
 
 ## Architecture Documents
 
