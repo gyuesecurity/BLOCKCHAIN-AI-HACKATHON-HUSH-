@@ -43,6 +43,21 @@ participant는 receipt의 모든 `participant_inputs` entry를 확인한다. 각
 
 독립 재현을 위해 receipt에는 content-addressed 또는 immutable release의 `candidate_dataset_uri`, `engine_artifact_uri`, `verification_script_uri`, `engine_git_commit`을 함께 제공한다. `engine_code_hash`는 Git commit 문자열이 아니라 공개한 Engine source archive bytes의 Keccak-256이다. Git commit과 artifact hash는 별도 field로 유지한다.
 
+## Pre-Screening Demo 구현 범위
+
+Demo(`backend/hush/chain.py`)는 위 interface 중 **최종 결정 provenance만** 사용한다:
+`createDecision → finalizeInputSet → commitDecision` 3개 transaction을 기본 Base Sepolia
+(`chain_id` 84532)에 기록한다. `commitDecision`은 컨트랙트가 `computeDecisionCommitment`로
+재계산한 값과 대조한다. 참가자별 `commitCondition` / `supersedeCondition`의 on-chain 기록은
+Demo 범위 밖이며 off-chain lifecycle로만 처리한다.
+
+레지스트리는 `decisionRoomId`마다 write-once이므로, Demo는 reset마다 새 `run_salt`를 만들어
+`decision_room_key = keccak256(f"{room_id}:{run_salt}")`로 매 리허설에 새 record를 쓴다.
+결정 직후 provenance는 `PENDING`, mined면 `CONFIRMED`, revert면 `FAILED`이고, anchoring은
+백그라운드로 수행돼 결정 흐름이 block 확정을 기다리지 않는다. `HUSH_CHAIN_*` 미설정이거나
+RPC/tx 실패 시 local verification fallback으로 내려가며 fake transaction/explorer 증거는
+만들지 않는다.
+
 ## 향후 확장
 
 P1의 Merkle proof는 자신의 `input_set_leaf`, Merkle proof, `input_set_root`만으로 inclusion을 검증하게 하므로 전체 `input_set_leaves` 전달을 제거한다. participant wallet signature와 ZK 만족 증명도 P1이다. public metadata로 인한 소규모 집단 추론 가능성은 P0에서 제거되지 않으므로 UI와 threat model에 명시한다.

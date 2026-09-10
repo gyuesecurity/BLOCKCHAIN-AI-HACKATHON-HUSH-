@@ -27,7 +27,15 @@
         <div class="output-head"><span class="label">ROOM-SAFE STATUS</span><a class="button-link" href="/participant">참가자 개인 화면</a></div>
         <pre id="output">공용 상태를 불러오는 중입니다.</pre>
       </section>
-      <aside><strong>Demo local verification — not on-chain</strong><span>이 화면은 참가자별 조건, 협상 대상과 제안 값을 요청하거나 표시하지 않습니다.</span></aside>
+      <aside>
+        <strong id="verification-label">Demo local verification — not on-chain</strong>
+        <span>이 화면은 참가자별 조건, 협상 대상과 제안 값을 요청하거나 표시하지 않습니다.</span>
+        <div id="onchain-box" hidden>
+          <span class="label">ON-CHAIN PROVENANCE</span>
+          <p id="onchain-summary"></p>
+          <a id="onchain-link" class="button-link" href="#" target="_blank" rel="noopener">explorer에서 보기</a>
+        </div>
+      </aside>
     </main>
     <script src="/static/app.js"></script>
   </body>

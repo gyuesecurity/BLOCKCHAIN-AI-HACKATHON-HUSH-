@@ -2,17 +2,62 @@ from __future__ import annotations
 
 import copy
 import secrets
+import threading
 from dataclasses import asdict
 from functools import wraps
 from pathlib import Path
 from threading import RLock
 from typing import Any
 
+from . import chain
 from .crypto import condition_commitment, hash_json, input_leaf, input_root, keccak256
 from .engine import decide
 from .fixtures import DEMO_CANDIDATES, DEMO_CONSTRAINTS
 from .parser import ParseError, structure_constraint
 from .verification import verify_receipt_data
+
+ENGINE_VERSION = "0.2.0"
+LOCAL_LABEL = "Demo local verification — not on-chain"
+
+
+def _verification_label(provenance: dict[str, Any] | None) -> str:
+    if provenance and provenance.get("status") == "CONFIRMED":
+        return f"Local + {provenance.get('network', 'testnet')} on-chain provenance"
+    return LOCAL_LABEL
+
+
+def _public_provenance(prov: dict[str, Any]) -> dict[str, Any]:
+    """Chain provenance is all hashes / tx metadata — no private data — but the
+    shared screen only needs a curated summary."""
+    summary: dict[str, Any] = {
+        "status": prov.get("status"),
+        "verification_mode": prov.get("verification_mode", "ONCHAIN"),
+    }
+    for key in (
+        "network",
+        "chain_id",
+        "contract_address",
+        "explorer_contract_url",
+        "decision_room_key",
+        "onchain_decision_commitment",
+        "reason",
+        "note",
+    ):
+        if prov.get(key) is not None:
+            summary[key] = prov[key]
+    transactions = prov.get("transactions") or []
+    if transactions:
+        commit = next(
+            (item for item in transactions if item.get("step") == "commitDecision"),
+            transactions[-1],
+        )
+        summary["decision_transaction"] = {
+            field: commit[field]
+            for field in ("tx_hash", "status", "block_number", "explorer_url")
+            if field in commit
+        }
+        summary["transaction_count"] = len(transactions)
+    return summary
 
 
 class DemoError(Exception):
@@ -58,6 +103,9 @@ class DemoService:
         self.proposal: dict[str, Any] | None = None
         self.approvals: list[dict[str, Any]] = []
         self.final_record: dict[str, Any] | None = None
+        # 컨트랙트 레지스트리는 room 키마다 write-once다. 데모를 reset 후 다시
+        # 돌려도 새 on-chain record가 생기도록 리허설마다 새 salt를 만든다.
+        self.chain_room_salt = secrets.token_hex(16)
         return self.shared_state()
 
     @synchronized
@@ -168,6 +216,7 @@ class DemoService:
         }
 
     def shared_state(self) -> dict[str, Any]:
+        provenance = self.final_record.get("chain_provenance") if self.final_record else None
         result: dict[str, Any] = {
             "decision_room_id": self.room_id,
             "title": "4인 저녁 식사 장소 결정",
@@ -179,7 +228,7 @@ class DemoService:
                 for value in self.participants.values()
             ),
             "verification_mode": "LOCAL",
-            "verification_label": "Demo local verification — not on-chain",
+            "verification_label": _verification_label(provenance),
         }
         if self.room_status == "NEGOTIATING":
             result["decision_status"] = "PRIVATE_ADJUSTMENT_AVAILABLE"
@@ -191,6 +240,8 @@ class DemoService:
                     "user_approved_relaxation_count": len(self.approvals),
                 }
             )
+            if provenance:
+                result["onchain"] = _public_provenance(provenance)
         else:
             result["decision_status"] = self.room_status
         return result
@@ -358,24 +409,83 @@ class DemoService:
                 "decision_room_id": self.room_id,
                 "input_set_root": run["input_set_root"],
                 "candidate_dataset_hash": dataset_hash,
-                "engine_version": "0.2.0",
+                "engine_version": ENGINE_VERSION,
                 "engine_code_hash": engine_hash,
                 "final_decision_hash": final_hash,
             }
         )
+        provenance = self._start_onchain_anchor(final_id, run["input_set_root"], dataset_hash, engine_hash, final_hash)
         self.final_record = {
             "final_decision_id": final_id,
             "candidate": copy.deepcopy(candidate),
             "candidate_dataset_hash": dataset_hash,
-            "engine_version": "0.2.0",
+            "engine_version": ENGINE_VERSION,
             "engine_code_hash": engine_hash,
             "final_decision_hash": final_hash,
             "decision_commitment": decision_commitment,
             "run": run,
             "verification_mode": "LOCAL",
-            "verification_label": "Demo local verification — not on-chain",
+            "verification_label": _verification_label(provenance),
+            "chain_provenance": provenance,
         }
         self.room_status = "COMPLETED"
+
+    def _start_onchain_anchor(
+        self,
+        final_id: str,
+        input_set_root: str,
+        dataset_hash: str,
+        engine_hash: str,
+        final_hash: str,
+    ) -> dict[str, Any] | None:
+        """Kick off on-chain anchoring in the background (Demo-04, minimal scope).
+
+        Returns the initial ``PENDING`` provenance immediately so the demo never
+        blocks on block confirmation; a daemon thread fills in the transaction
+        results. Returns ``None`` (LOCAL only) when the chain path is not
+        configured. Nothing here can change the decision.
+        """
+        if not chain.chain_enabled():
+            return None
+
+        salt = self.chain_room_salt
+        try:
+            room_key = chain.room_key(self.room_id, salt)
+        except chain.ChainUnavailable as exc:
+            return {"status": "UNAVAILABLE", "verification_mode": "LOCAL", "reason": str(exc)[:200]}
+
+        params = {
+            "room_id": self.room_id,
+            "run_salt": salt,
+            "input_set_root": input_set_root,
+            "candidate_dataset_hash": dataset_hash,
+            "engine_code_hash": engine_hash,
+            "final_decision_hash": final_hash,
+            "engine_version": ENGINE_VERSION,
+        }
+
+        def worker() -> None:
+            try:
+                result = chain.anchor_final_decision(**params)
+            except chain.ChainUnavailable as exc:
+                result = {"status": "UNAVAILABLE", "verification_mode": "LOCAL", "reason": str(exc)[:200]}
+            except Exception as exc:  # pragma: no cover - defensive
+                result = {"status": "FAILED", "verification_mode": "LOCAL", "reason": str(exc)[:200]}
+            with self._lock:
+                if self.final_record and self.final_record.get("final_decision_id") == final_id:
+                    self.final_record["chain_provenance"] = result
+                    self.final_record["verification_label"] = _verification_label(result)
+
+        threading.Thread(target=worker, name="hush-onchain-anchor", daemon=True).start()
+        return {
+            "status": "PENDING",
+            "verification_mode": "ONCHAIN",
+            "network": chain.network_name(),
+            "chain_id": chain.chain_id(),
+            "decision_room_key": room_key,
+            "note": "on-chain 기록 진행 중 — 확정되면 CONFIRMED로 바뀝니다.",
+            "transactions": [],
+        }
 
     def receipt(self, participant: str, include_private: bool = False) -> dict[str, Any]:
         if not self.final_record:
@@ -418,6 +528,8 @@ class DemoService:
             "engine_artifact_uri": "backend/hush/engine.py",
             "verification_script_uri": "scripts/verify_receipt.py",
         }
+        if record.get("chain_provenance"):
+            receipt["chain_provenance"] = copy.deepcopy(record["chain_provenance"])
         if include_private:
             receipt["private_verification_material"] = private_material
         return receipt
@@ -429,10 +541,60 @@ class DemoService:
             DEMO_CANDIDATES,
             Path(__file__).with_name("engine.py").read_bytes(),
         )
-        return {
+        provenance = self.final_record.get("chain_provenance") if self.final_record else None
+        response = {
             **result,
             "verification_mode": "LOCAL",
-            "verification_label": "Demo local verification — not on-chain",
+            "verification_label": _verification_label(provenance),
+        }
+        if provenance and provenance.get("status") == "CONFIRMED":
+            response["onchain"] = self._verify_onchain(receipt, provenance)
+            if response["onchain"].get("checks"):
+                result["checks"].update(response["onchain"]["checks"])
+                response["checks"] = result["checks"]
+                response["status"] = "VERIFIED" if all(result["checks"].values()) else "INVALID"
+        elif provenance:
+            response["onchain"] = {"status": provenance.get("status"), "verified": False}
+        return response
+
+    @staticmethod
+    def _verify_onchain(receipt: dict[str, Any], provenance: dict[str, Any]) -> dict[str, Any]:
+        """Re-read the registry and confirm it matches the receipt.
+
+        Chain read failures never fail the overall receipt (local verification is
+        independent and complete) — they surface as an explicit skip note.
+        """
+        try:
+            record = chain.read_decision_record(provenance["decision_room_key"])
+        except chain.ChainUnavailable as exc:
+            return {"status": "CONFIRMED", "verified": False, "note": f"on-chain 재조회 실패: {exc}"[:200]}
+
+        def _eq(a: str | None, b: str | None) -> bool:
+            return bool(a) and bool(b) and a.lower() == b.lower()
+
+        checks = {
+            "onchain_decision_committed": record.get("decision_committed") is True,
+            "onchain_decision_commitment_matches": _eq(
+                record.get("decision_commitment"), provenance.get("onchain_decision_commitment")
+            ),
+            "onchain_input_set_root_matches": _eq(
+                record.get("input_set_root"), receipt["input_set_root"]
+            ),
+            "onchain_final_decision_hash_matches": _eq(
+                record.get("final_decision_hash"), receipt["final_decision_hash"]
+            ),
+            "onchain_candidate_dataset_hash_matches": _eq(
+                record.get("candidate_dataset_hash"), receipt["candidate_dataset_hash"]
+            ),
+            "onchain_engine_code_hash_matches": _eq(
+                record.get("engine_code_hash"), receipt["engine_code_hash"]
+            ),
+        }
+        return {
+            "status": "CONFIRMED",
+            "verified": all(checks.values()),
+            "checks": checks,
+            "record": record,
         }
 
     def _participant(self, participant: str) -> None:

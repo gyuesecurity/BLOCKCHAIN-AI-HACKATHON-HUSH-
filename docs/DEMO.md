@@ -45,6 +45,35 @@ Gemini structured output(`response_schema` = Pydantic + `response_mime_type="app
   `parser_mode="DEMO_RULE_PARSER"`, `is_ai=false`, `llm_fallback=true`를 표시한다. AI라고 과장하지 않는다.
 - 원문이 외부 LLM provider로 전송된다는 점은 UI 및 `docs/architecture/09-security-and-privacy.md`에 고지돼 있다.
 
+## On-chain provenance (선택)
+
+`HUSH_CHAIN_PRIVATE_KEY`와 `HUSH_CHAIN_CONTRACT_ADDRESS`가 설정되면 **최종 결정 커밋**을
+EVM testnet(기본 Base Sepolia)에 기록한다. 범위는 Demo-04의 최소치다 — `createDecision →
+finalizeInputSet → commitDecision` 3개 트랜잭션. 참가자별 condition commitment는 이 데모에서는
+off-chain에 둔다.
+
+```bash
+pip install -e '.[chain]'
+python scripts/new_wallet.py        # testnet 전용 relayer 지갑 → 출력 주소를 faucet에서 충전
+#   Base Sepolia faucet: https://portal.cdp.coinbase.com/products/faucet
+python scripts/deploy_contract.py   # 레지스트리 1회 배포 → HUSH_CHAIN_CONTRACT_ADDRESS 출력
+export HUSH_CHAIN_RPC_URL=https://sepolia.base.org
+export HUSH_CHAIN_PRIVATE_KEY=0x...          # testnet 전용, 커밋 금지
+export HUSH_CHAIN_CONTRACT_ADDRESS=0x...
+uvicorn hush.main:app --app-dir backend
+```
+
+- 컨트랙트는 provenance만 저장한다. raw constraint·salt·participant identity는 올리지 않는다.
+- on-chain `decision_commitment`는 컨트랙트가 `DECISION_DOMAIN + chainid + address(this) + …`로
+  **직접 재계산·대조**한다. 다른 chain/contract로 replay 불가.
+- 결정 직후 provenance는 `PENDING`, mined되면 `CONFIRMED`(receipt에 tx hash·basescan link),
+  revert면 `FAILED`. 이 동안 결정 흐름은 블록 확정을 기다리지 않는다(백그라운드 anchor).
+- 레지스트리는 room 키마다 write-once라, 데모 reset마다 새 `run_salt`로 새 record를 만든다.
+- 키/주소가 없거나 RPC 실패 시 자동으로 local verification fallback이며 `— not on-chain`으로
+  표시한다. **fake transaction hash나 fake explorer link는 만들지 않는다.**
+- `verify`는 on-chain이 `CONFIRMED`면 레지스트리를 다시 읽어 `decision_commitment` /
+  `input_set_root` / `final_decision_hash` / dataset·engine hash 일치를 추가 확인한다.
+
 ## 현재 증명하는 것
 
 - 후보 6곳 전체에 대한 실제 Hard Constraint 평가
@@ -56,13 +85,14 @@ Gemini structured output(`response_schema` = Pydantic + `response_mime_type="app
 - 자신의 Condition Commitment와 input leaf 포함 여부 재검증
 - dataset, Engine source, input set root, final decision hash와 decision commitment의 Keccak-256 로컬 재검증
 - 일반 영수증에서는 salt를 제외하고 인증된 검증용 JSON export에만 자신의 preimage material 포함
-- Solidity `HushDecisionRegistry` 컴파일 가능성
+- Solidity `HushDecisionRegistry` 컴파일, 그리고 (설정 시) Base Sepolia에 최종 결정 커밋 실제 기록
 
 ## 정직한 한계
 
-- 현재 ledger adapter는 local memory이며 UI에 `Demo local verification — not on-chain`이라고 표시한다.
+- chain 미설정 시 ledger adapter는 local memory이며 UI에 `Demo local verification — not on-chain`이라고 표시한다.
+- on-chain은 **최종 결정 커밋 1건**만 기록한다. 참가자별 condition commitment on-chain 기록, PostgreSQL persistence, at-rest 암호화, 서버 배포, CI는 P0 범위다.
 - invite code는 시연 fixture다. join 뒤 participant session은 매번 새 random token으로 발급되지만 production 인증을 대체하지 않는다.
-- 자연어 구조화는 `GEMINI_API_KEY`가 있으면 실제 Google Gemini, 없으면 규칙 기반 parser로 동작한다. PostgreSQL persistence, transaction outbox, EVM RPC 배포는 다음 integration 단계다.
-- Contract가 아직 testnet에 배포되지 않았으므로 transaction hash나 explorer link를 만들지 않는다.
+- 자연어 구조화는 `GEMINI_API_KEY`가 있으면 실제 Google Gemini, 없으면 규칙 기반 parser로 동작한다.
+- chain이 미설정이거나 RPC/tx가 실패하면 transaction hash나 explorer link를 만들지 않는다.
 
 이 한계를 숨기거나 `on-chain verified`로 표현하지 않는다.

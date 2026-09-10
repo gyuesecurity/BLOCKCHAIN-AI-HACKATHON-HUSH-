@@ -73,11 +73,28 @@ byId("run").onclick = () => perform(() => request(`/api/demo/participants/${part
 byId("refresh").onclick = refreshPrivate;
 byId("accept").onclick = () => perform(() => request(`/api/demo/participants/${participant}/proposal/accept`, "POST")).then(refreshPrivate);
 byId("reject").onclick = () => perform(() => request(`/api/demo/participants/${participant}/proposal/reject`, "POST")).then(refreshPrivate);
+function chainHeader(provenance) {
+  if (!provenance) return "";
+  const tx = (provenance.transactions || []).find((t) => t.step === "commitDecision")
+    || (provenance.transactions || [])[provenance.transactions.length - 1];
+  let line = `[on-chain · ${provenance.network || "testnet"} · ${provenance.status}]`;
+  if (tx && tx.explorer_url && provenance.status === "CONFIRMED") line += `\n${tx.explorer_url}`;
+  if (provenance.reason) line += `\n${provenance.reason}`;
+  return line + "\n\n";
+}
+
 byId("receipt").onclick = async () => {
   latestReceipt = await request(`/api/demo/participants/${participant}/receipt`);
-  byId("receipt-output").textContent = JSON.stringify(latestReceipt, null, 2);
+  byId("receipt-output").textContent =
+    chainHeader(latestReceipt.chain_provenance) + JSON.stringify(latestReceipt, null, 2);
 };
-byId("verify").onclick = () => perform(() => request(`/api/demo/participants/${participant}/verify`, "POST"), "receipt-output");
+byId("verify").onclick = async () => {
+  const data = await perform(() => request(`/api/demo/participants/${participant}/verify`, "POST"), "receipt-output");
+  if (data && data.onchain) {
+    byId("receipt-output").textContent =
+      `[on-chain 재검증: ${data.onchain.verified ? "OK" : "실패/생략"}]\n\n` + byId("receipt-output").textContent;
+  }
+};
 byId("export").onclick = async () => {
   latestReceipt = await request(`/api/demo/participants/${participant}/receipt/export`);
   const blob = new Blob([JSON.stringify(latestReceipt, null, 2)], { type: "application/json" });
