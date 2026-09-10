@@ -243,7 +243,46 @@ def test_structure_with_llm_wraps_api_error(monkeypatch):
     pytest.importorskip("google.genai")
     from google.genai import errors as genai_errors
 
+    monkeypatch.setattr(llm.time, "sleep", lambda *_: None)
     err = genai_errors.APIError(429, {"error": {"message": "quota"}})
     _install_fake_gemini(monkeypatch, err, {})
     with pytest.raises(llm.LLMUnavailable):
         llm.structure_with_llm("...")
+
+
+def test_structure_with_llm_retries_then_succeeds(monkeypatch):
+    pytest.importorskip("google.genai")
+    from google import genai
+    from google.genai import errors as genai_errors
+
+    sleeps: list[float] = []
+    monkeypatch.setattr(llm.time, "sleep", lambda seconds: sleeps.append(seconds))
+
+    body = (
+        '{"supported": true, "constraint_type": "max_price", "priority": "HARD",'
+        ' "amount": 15000, "excluded_categories": [], "accessibility_features": [],'
+        ' "latest_end_time": "", "explanation": "1인 15000원 상한", "confidence": 0.9}'
+    )
+    responses = [
+        genai_errors.APIError(429, {"error": {"message": "quota"}}),
+        _GResp(parsed=None, text=body),
+    ]
+
+    class _FakeModels:
+        def generate_content(self, **_kwargs):
+            item = responses.pop(0)
+            if isinstance(item, Exception):
+                raise item
+            return item
+
+    class _FakeClient:
+        def __init__(self, *a, **k):
+            self.models = _FakeModels()
+
+    monkeypatch.setattr(genai, "Client", _FakeClient)
+    monkeypatch.setenv("HUSH_LLM_ENABLED", "true")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+
+    out = llm.structure_with_llm("1인 15000원 넘으면 안 돼요")
+    assert out["structured_candidate"]["constraint_value"] == {"amount": 15000, "currency": "KRW"}
+    assert sleeps == [llm._RETRY_BACKOFF[0]]

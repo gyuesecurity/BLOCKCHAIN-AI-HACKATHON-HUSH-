@@ -42,6 +42,9 @@ ALLOWED_FEATURES = {"wheelchair_ramp", "elevator", "accessible_restroom"}
 
 DEFAULT_MODEL = "gemini-3.5-flash-lite"
 _RETRY_STATUSES = {429, 500, 503}
+# 시도 사이 대기(초). 길이 + 1 = 총 시도 횟수. 429(rate limit)는 짧은 재시도로는
+# 안 풀려서 지수적으로 벌려 준다. 마지막 시도까지 실패하면 규칙 parser로 fallback.
+_RETRY_BACKOFF = (2.0, 5.0)
 _TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 _MIN_PRICE = 1_000
 _MAX_PRICE = 1_000_000
@@ -231,7 +234,7 @@ def structure_with_llm(source_text: str) -> dict[str, Any]:
     )
     contents = _wrap_untrusted(source_text)
     last_exc: Exception | None = None
-    for attempt in range(2):
+    for attempt in range(len(_RETRY_BACKOFF) + 1):
         try:
             response = client.models.generate_content(
                 model=_model(), contents=contents, config=config
@@ -239,8 +242,9 @@ def structure_with_llm(source_text: str) -> dict[str, Any]:
             break
         except genai_errors.APIError as exc:
             last_exc = exc
-            if getattr(exc, "code", None) in _RETRY_STATUSES and attempt == 0:
-                time.sleep(1.0)
+            retryable = getattr(exc, "code", None) in _RETRY_STATUSES
+            if retryable and attempt < len(_RETRY_BACKOFF):
+                time.sleep(_RETRY_BACKOFF[attempt])
                 continue
             raise LLMUnavailable(
                 f"Gemini API 오류: {type(exc).__name__} {getattr(exc, 'code', '')}"
