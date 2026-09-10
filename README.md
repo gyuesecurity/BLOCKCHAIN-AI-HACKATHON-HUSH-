@@ -192,7 +192,7 @@ uvicorn hush.main:app --app-dir backend --reload
 
 브라우저에서 공용 화면 `http://127.0.0.1:8000`과 참가자 전용 화면 `http://127.0.0.1:8000/participant`를 엽니다. A/B/C/D는 각자 전달받은 Demo invite code로 join하고 `자연어 입력 → 구조화 결과 확인 → 확정`을 수행합니다. 네 입력이 모두 확정되면 참가자가 Engine을 실행하고, A의 private 화면에서만 완화안을 승인한 뒤 재실행과 영수증 검증을 진행합니다. 현재 구현은 `Demo local verification — not on-chain`을 명시합니다.
 
-Demo invite code와 입력 예시는 [실행 데모 문서](docs/DEMO.md)에 있습니다. 외부 LLM 미연결 상태에서는 parser가 `DEMO_RULE_PARSER`, `is_ai=false`를 반환하므로 실제 AI로 표현하지 않습니다.
+Demo invite code와 입력 예시는 [실행 데모 문서](docs/DEMO.md)에 있습니다. 발표 당일 순서·대사·복구 절차는 [시연 런북](docs/DEMO-RUNBOOK.md)을 따르세요. 외부 LLM 미연결 상태에서는 parser가 `DEMO_RULE_PARSER`, `is_ai=false`를 반환하므로 실제 AI로 표현하지 않습니다.
 
 ```bash
 pytest
