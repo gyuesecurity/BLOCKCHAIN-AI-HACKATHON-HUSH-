@@ -57,26 +57,29 @@ Gemini structured output(`response_schema` = Pydantic + `response_mime_type="app
 ## On-chain provenance (선택)
 
 `HUSH_CHAIN_PRIVATE_KEY`와 `HUSH_CHAIN_CONTRACT_ADDRESS`가 설정되면 **최종 결정 커밋**을
-EVM testnet(기본 Base Sepolia)에 기록한다. 범위는 Demo-04의 최소치다 — `createDecision →
+EVM testnet(기본 Ethereum Sepolia)에 기록한다. 범위는 Demo-04의 최소치다 — `createDecision →
 finalizeInputSet → commitDecision` 3개 트랜잭션. 참가자별 condition commitment는 이 데모에서는
 off-chain에 둔다.
+
+배포된 레지스트리(Ethereum Sepolia): [`0x946ff260a3F67A37c6D0B60bD2E5db905b499cf8`](https://sepolia.etherscan.io/address/0x946ff260a3F67A37c6D0B60bD2E5db905b499cf8)
+— 배포 기록은 `contracts/deployments/ethereum-sepolia.json`.
 
 ```bash
 pip install -e '.[chain]'
 python scripts/new_wallet.py        # testnet 전용 relayer 지갑 → 출력 주소를 faucet에서 충전
-#   Base Sepolia faucet: https://portal.cdp.coinbase.com/products/faucet
+#   Sepolia faucet (로그인 불필요): https://sepolia-faucet.pk910.de
 python scripts/deploy_contract.py   # 레지스트리 1회 배포 → HUSH_CHAIN_CONTRACT_ADDRESS 출력
-export HUSH_CHAIN_RPC_URL=https://sepolia.base.org
 export HUSH_CHAIN_PRIVATE_KEY=0x...          # testnet 전용, 커밋 금지
-export HUSH_CHAIN_CONTRACT_ADDRESS=0x...
-uvicorn hush.main:app --app-dir backend
+export HUSH_CHAIN_CONTRACT_ADDRESS=0x...     # 위 배포 주소를 재사용해도 된다
+uvicorn hush.main:app --app-dir backend --env-file .env
 ```
 
 - 컨트랙트는 provenance만 저장한다. raw constraint·salt·participant identity는 올리지 않는다.
 - on-chain `decision_commitment`는 컨트랙트가 `DECISION_DOMAIN + chainid + address(this) + …`로
   **직접 재계산·대조**한다. 다른 chain/contract로 replay 불가.
-- 결정 직후 provenance는 `PENDING`, mined되면 `CONFIRMED`(receipt에 tx hash·basescan link),
+- 결정 직후 provenance는 `PENDING`, mined되면 `CONFIRMED`(receipt에 tx hash·etherscan link),
   revert면 `FAILED`. 이 동안 결정 흐름은 블록 확정을 기다리지 않는다(백그라운드 anchor).
+  실측: 3개 트랜잭션이 `PENDING → CONFIRMED`까지 Ethereum Sepolia에서 약 40초.
 - 레지스트리는 room 키마다 write-once라, 데모 reset마다 새 `run_salt`로 새 record를 만든다.
 - 키/주소가 없거나 RPC 실패 시 자동으로 local verification fallback이며 `— not on-chain`으로
   표시한다. **fake transaction hash나 fake explorer link는 만들지 않는다.**
@@ -94,7 +97,7 @@ uvicorn hush.main:app --app-dir backend
 - 자신의 Condition Commitment와 input leaf 포함 여부 재검증
 - dataset, Engine source, input set root, final decision hash와 decision commitment의 Keccak-256 로컬 재검증
 - 일반 영수증에서는 salt를 제외하고 인증된 검증용 JSON export에만 자신의 preimage material 포함
-- Solidity `HushDecisionRegistry` 컴파일, 그리고 (설정 시) Base Sepolia에 최종 결정 커밋 실제 기록
+- Solidity `HushDecisionRegistry`를 Ethereum Sepolia에 실제 배포, 최종 결정 커밋 3건을 실제 트랜잭션으로 기록하고 `verify`가 레지스트리를 재조회해 receipt와 대조 (총 16개 체크)
 
 ## 정직한 한계
 

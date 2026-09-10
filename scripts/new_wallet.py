@@ -2,7 +2,7 @@
 """Generate a throwaway relayer wallet for the demo.
 
 TESTNET ONLY. Never send mainnet funds to this address and never commit the key.
-Fund the printed address from a Base Sepolia faucet, then put the private key in
+Fund the printed address from a Sepolia faucet, then put the private key in
 `.env` as HUSH_CHAIN_PRIVATE_KEY.
 """
 
@@ -31,12 +31,12 @@ def main() -> int:
     print(f"private key  : {private_key}")
     print()
     print("다음 단계:")
-    print(f"  1. 이 주소를 Base Sepolia faucet에서 충전  ->  {account.address}")
-    print("     - https://portal.cdp.coinbase.com/products/faucet  (Base Sepolia)")
-    print("     - https://www.alchemy.com/faucets/base-sepolia")
+    print(f"  1. 이 주소를 Sepolia faucet에서 충전  ->  {account.address}")
+    print("     - https://sepolia-faucet.pk910.de  (로그인 불필요, 브라우저 PoW)")
+    print("     - https://cloud.google.com/application/web3/faucet/ethereum/sepolia")
     print("  2. .env 에 아래 줄 추가 (커밋 금지):")
     print(f"     HUSH_CHAIN_PRIVATE_KEY={private_key}")
-    print("     HUSH_CHAIN_RPC_URL=https://sepolia.base.org")
+    print("     HUSH_CHAIN_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com")
     print("  3. python scripts/deploy_contract.py  로 레지스트리 배포")
     return 0
 

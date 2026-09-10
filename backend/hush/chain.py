@@ -6,7 +6,7 @@ decision — it only anchors hashes the deterministic engine already produced
 (``docs/architecture/07-blockchain-contract.md``).
 
 Scope (Demo-04, minimal): ``createDecision`` -> ``finalizeInputSet`` ->
-``commitDecision`` for one decision room on an EVM testnet (default Base
+``commitDecision`` for one decision room on an EVM testnet (default Ethereum
 Sepolia). Per-participant condition commitments stay off-chain in this demo.
 
 Enabled when ``HUSH_CHAIN_PRIVATE_KEY`` and ``HUSH_CHAIN_CONTRACT_ADDRESS`` are
@@ -25,10 +25,10 @@ BUILD_ARTIFACT = (
     Path(__file__).resolve().parents[2] / "contracts" / "build" / "HushDecisionRegistry.json"
 )
 
-DEFAULT_RPC_URL = "https://sepolia.base.org"
-DEFAULT_CHAIN_ID = 84532
-DEFAULT_NETWORK_NAME = "Base Sepolia"
-DEFAULT_EXPLORER = "https://sepolia.basescan.org"
+DEFAULT_RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com"
+DEFAULT_CHAIN_ID = 11155111
+DEFAULT_NETWORK_NAME = "Ethereum Sepolia"
+DEFAULT_EXPLORER = "https://sepolia.etherscan.io"
 DEFAULT_TX_TIMEOUT = 150
 
 ENGINE_VERSION = "0.2.0"

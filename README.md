@@ -99,7 +99,7 @@ A.max_price
 
 A가 `ACCEPT`하면 변경된 Constraint로 Decision Engine을 다시 실행하여 `FEASIBLE` 여부와 deterministic Final Decision을 실제로 계산합니다. 완화 후 HARD 조건을 모두 통과한 후보가 둘 남고, B의 `SOFT` 음식 선호가 SOFT scoring 단계에서 최종 선택을 가릅니다(선호가 없으면 candidate id 순서로 다른 후보가 선택됨). Participant Receipt와 verification까지 이어집니다. 다른 participant에게 A의 raw private Constraint, 원값, proposal 상세 또는 개인 사유는 공개하지 않습니다.
 
-`HUSH_CHAIN_*` 환경변수가 설정되면 최종 결정 커밋(`createDecision → finalizeInputSet → commitDecision`)을 EVM testnet(기본 Base Sepolia)에 실제로 기록하고, Receipt에 transaction hash와 explorer link, `PENDING → CONFIRMED` 상태를 표시합니다. 미설정이거나 RPC/tx 실패 시에는 local verification으로 자동 fallback하며 fake transaction·explorer 증거를 만들지 않습니다. 자세한 내용은 [`docs/DEMO.md`](docs/DEMO.md).
+`HUSH_CHAIN_*` 환경변수가 설정되면 최종 결정 커밋(`createDecision → finalizeInputSet → commitDecision`)을 EVM testnet(기본 Ethereum Sepolia)에 실제로 기록하고, Receipt에 transaction hash와 explorer link, `PENDING → CONFIRMED` 상태를 표시합니다. 레지스트리는 [`0x946ff260a3F67A37c6D0B60bD2E5db905b499cf8`](https://sepolia.etherscan.io/address/0x946ff260a3F67A37c6D0B60bD2E5db905b499cf8)에 배포돼 있습니다. 미설정이거나 RPC/tx 실패 시에는 local verification으로 자동 fallback하며 fake transaction·explorer 증거를 만들지 않습니다. 자세한 내용은 [`docs/DEMO.md`](docs/DEMO.md).
 
 Pre-Screening Demo에서는 generalized numeric minimum-relaxation search를 정상 Engine path로 사용합니다. 안정성이 확보되지 않은 경우에는 fixture로 검증된 위 representative proposal만 fallback으로 사용하며, 이를 general-purpose solver로 표현하지 않습니다. 이 경우에도 `NO FEASIBLE SOLUTION`, `FEASIBLE`, conflict status, selected candidate, Final Decision은 실제 Decision Engine 계산을 유지하며 결과 전체를 고정하지 않습니다.
 

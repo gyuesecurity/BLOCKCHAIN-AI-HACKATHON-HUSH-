@@ -46,10 +46,11 @@ participant는 receipt의 모든 `participant_inputs` entry를 확인한다. 각
 ## Pre-Screening Demo 구현 범위
 
 Demo(`backend/hush/chain.py`)는 위 interface 중 **최종 결정 provenance만** 사용한다:
-`createDecision → finalizeInputSet → commitDecision` 3개 transaction을 기본 Base Sepolia
-(`chain_id` 84532)에 기록한다. `commitDecision`은 컨트랙트가 `computeDecisionCommitment`로
-재계산한 값과 대조한다. 참가자별 `commitCondition` / `supersedeCondition`의 on-chain 기록은
-Demo 범위 밖이며 off-chain lifecycle로만 처리한다.
+`createDecision → finalizeInputSet → commitDecision` 3개 transaction을 기본 Ethereum Sepolia
+(`chain_id` 11155111)에 기록한다. 배포 레지스트리: `0x946ff260a3F67A37c6D0B60bD2E5db905b499cf8`.
+`commitDecision`은 컨트랙트가 `computeDecisionCommitment`로 재계산한 값과 대조한다. 참가자별
+`commitCondition` / `supersedeCondition`의 on-chain 기록은 Demo 범위 밖이며 off-chain
+lifecycle로만 처리한다.
 
 레지스트리는 `decisionRoomId`마다 write-once이므로, Demo는 reset마다 새 `run_salt`를 만들어
 `decision_room_key = keccak256(f"{room_id}:{run_salt}")`로 매 리허설에 새 record를 쓴다.

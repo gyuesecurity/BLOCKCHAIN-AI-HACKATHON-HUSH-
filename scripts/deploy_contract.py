@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Deploy HushDecisionRegistry to the configured testnet (default Base Sepolia).
+"""Deploy HushDecisionRegistry to the configured testnet (default Ethereum Sepolia).
 
 Requires (env or .env):
-  HUSH_CHAIN_RPC_URL       default https://sepolia.base.org
+  HUSH_CHAIN_RPC_URL       default https://ethereum-sepolia-rpc.publicnode.com
   HUSH_CHAIN_PRIVATE_KEY   funded deployer / relayer key (testnet only)
 Optional:
   HUSH_CHAIN_RELAYER       relayer address to authorise (default: deployer)
-  HUSH_CHAIN_ID            default 84532
-  HUSH_CHAIN_NETWORK_NAME  default "Base Sepolia"
+  HUSH_CHAIN_ID            default 11155111
+  HUSH_CHAIN_NETWORK_NAME  default "Ethereum Sepolia"
 
 Prints the deployed address for HUSH_CHAIN_CONTRACT_ADDRESS and writes
 contracts/deployments/<network>.json.
@@ -36,13 +36,13 @@ def main() -> int:
         print("web3가 필요합니다:  pip install -e '.[chain]'")
         return 1
 
-    rpc_url = os.getenv("HUSH_CHAIN_RPC_URL", "https://sepolia.base.org")
+    rpc_url = os.getenv("HUSH_CHAIN_RPC_URL", "https://ethereum-sepolia-rpc.publicnode.com")
     key = os.getenv("HUSH_CHAIN_PRIVATE_KEY")
     if not key:
         print("HUSH_CHAIN_PRIVATE_KEY 가 필요합니다 (scripts/new_wallet.py 로 생성).")
         return 1
-    chain_id = int(os.getenv("HUSH_CHAIN_ID", "84532"))
-    network = os.getenv("HUSH_CHAIN_NETWORK_NAME", "Base Sepolia")
+    chain_id = int(os.getenv("HUSH_CHAIN_ID", "11155111"))
+    network = os.getenv("HUSH_CHAIN_NETWORK_NAME", "Ethereum Sepolia")
 
     if not ARTIFACT.exists():
         print(f"빌드 산출물이 없습니다: {ARTIFACT}  ->  python scripts/compile_contract.py")
@@ -92,7 +92,7 @@ def main() -> int:
         return 1
 
     address = receipt["contractAddress"]
-    explorer = os.getenv("HUSH_CHAIN_EXPLORER", "https://sepolia.basescan.org").rstrip("/")
+    explorer = os.getenv("HUSH_CHAIN_EXPLORER", "https://sepolia.etherscan.io").rstrip("/")
     deployment = {
         "network": network,
         "chain_id": chain_id,

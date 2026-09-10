@@ -24,13 +24,13 @@ except ModuleNotFoundError:
 CONFIRMED_PROVENANCE = {
     "status": "CONFIRMED",
     "verification_mode": "ONCHAIN",
-    "network": "Base Sepolia",
-    "chain_id": 84532,
+    "network": "Ethereum Sepolia",
+    "chain_id": 11155111,
     "contract_address": "0x000000000000000000000000000000000000dEaD",
     "relayer_address": "0x000000000000000000000000000000000000BEEF",
     "decision_room_key": "0x" + "22" * 32,
     "onchain_decision_commitment": "0x" + "33" * 32,
-    "explorer_contract_url": "https://sepolia.basescan.org/address/0x0",
+    "explorer_contract_url": "https://sepolia.etherscan.io/address/0x0",
     "transactions": [
         {"step": "createDecision", "tx_hash": "0x" + "a1" * 32, "status": "CONFIRMED", "block_number": 1, "explorer_url": "https://x/tx/1"},
         {"step": "finalizeInputSet", "tx_hash": "0x" + "a2" * 32, "status": "CONFIRMED", "block_number": 2, "explorer_url": "https://x/tx/2"},
