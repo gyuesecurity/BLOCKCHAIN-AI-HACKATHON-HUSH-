@@ -16,7 +16,7 @@ client = TestClient(app)
 ADMIN = {"X-Demo-Admin-Key": "local-demo-admin"}
 INPUTS = {
     "A": "15,000원 넘는 곳은 부담스러워요",
-    "B": "해산물은 못 먹어요",
+    "B": "가능하면 해산물은 피하고 싶어요",
     "C": "휠체어 경사로가 필요해요",
     "D": "21시 이전에 끝나야 해요",
 }
@@ -84,7 +84,7 @@ def test_full_private_input_negotiation_and_verification_flow():
     assert [(item["constraint_version"], item["status"]) for item in history] == [(1, "SUPERSEDED"), (2, "ACTIVE")]
 
     final = client.post("/api/demo/participants/A/decision-runs", headers=sessions["A"])
-    assert final.json()["selected_candidate_id"] == "restaurant-01"
+    assert final.json()["selected_candidate_id"] == "restaurant-04"
     verification = client.post("/api/demo/participants/A/verify", headers=sessions["A"]).json()
     assert verification["status"] == "VERIFIED"
     assert all(verification["checks"].values())

@@ -85,7 +85,7 @@ AI는 User Approval 없이 Constraint를 바꾸지 않으며, Backend도 Engine�
 | Participant | Private condition | 역할 |
 |---|---|---|
 | A | `max_price <= 15000` (`HARD`) | 가격 상한 |
-| B | `excluded_category=seafood` (`HARD`) | 식이 제한 |
+| B | `excluded_category=seafood` (`SOFT`) | 음식 종류 선호 |
 | C | `wheelchair_ramp` (`HARD`) | 접근성 반영 |
 | D | 종료 시간 관련 `HARD` constraint | 시간 제한 |
 
@@ -97,7 +97,7 @@ A.max_price
 [ACCEPT] [KEEP]
 ```
 
-A가 `ACCEPT`하면 변경된 Constraint로 Decision Engine을 다시 실행하여 `FEASIBLE` 여부와 deterministic Final Decision을 실제로 계산합니다. Participant Receipt와 verification까지 이어집니다. 다른 participant에게 A의 raw private Constraint, 원값, proposal 상세 또는 개인 사유는 공개하지 않습니다.
+A가 `ACCEPT`하면 변경된 Constraint로 Decision Engine을 다시 실행하여 `FEASIBLE` 여부와 deterministic Final Decision을 실제로 계산합니다. 완화 후 HARD 조건을 모두 통과한 후보가 둘 남고, B의 `SOFT` 음식 선호가 SOFT scoring 단계에서 최종 선택을 가릅니다(선호가 없으면 candidate id 순서로 다른 후보가 선택됨). Participant Receipt와 verification까지 이어집니다. 다른 participant에게 A의 raw private Constraint, 원값, proposal 상세 또는 개인 사유는 공개하지 않습니다.
 
 Pre-Screening Demo에서는 generalized numeric minimum-relaxation search를 정상 Engine path로 사용합니다. 안정성이 확보되지 않은 경우에는 fixture로 검증된 위 representative proposal만 fallback으로 사용하며, 이를 general-purpose solver로 표현하지 않습니다. 이 경우에도 `NO FEASIBLE SOLUTION`, `FEASIBLE`, conflict status, selected candidate, Final Decision은 실제 Decision Engine 계산을 유지하며 결과 전체를 고정하지 않습니다.
 

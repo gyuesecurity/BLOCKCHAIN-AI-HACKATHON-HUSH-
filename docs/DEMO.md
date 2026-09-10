@@ -1,6 +1,6 @@
 # HUSH 실행 데모
 
-이 구현은 3~4일 Pre-Screening용 thin vertical slice다. 네 참가자의 고정 fixture를 사용해 `INFEASIBLE → private proposal → user ACCEPT → recalculation → FEASIBLE → receipt verification`을 실제 계산한다.
+이 구현은 3~4일 Pre-Screening용 thin vertical slice다. 네 참가자(A `HARD` 가격, B `SOFT` 음식 선호, C `HARD` 접근성, D `HARD` 종료시간)의 고정 fixture를 사용해 `INFEASIBLE → private proposal → user ACCEPT → recalculation → FEASIBLE(SOFT 선호로 tie-break) → receipt verification`을 실제 계산한다.
 
 ## 실행
 
@@ -15,10 +15,12 @@ uvicorn hush.main:app --app-dir backend --reload
 
 | Participant | Invite code | 자연어 입력 예시 |
 |---|---|---|
-| A | `HUSH-A-2026` | `15,000원 넘는 곳은 부담스러워요` |
-| B | `HUSH-B-2026` | `해산물은 못 먹어요` |
-| C | `HUSH-C-2026` | `휠체어 경사로가 필요해요` |
-| D | `HUSH-D-2026` | `21시 이전에 끝나야 해요` |
+| A | `HUSH-A-2026` | `15,000원 넘는 곳은 부담스러워요` (→ `max_price` `HARD`) |
+| B | `HUSH-B-2026` | `가능하면 해산물은 피하고 싶어요` (→ `excluded_category` `SOFT`) |
+| C | `HUSH-C-2026` | `휠체어 경사로가 필요해요` (→ `accessibility_required` `HARD`) |
+| D | `HUSH-D-2026` | `21시 이전에 끝나야 해요` (→ `latest_end_time` `HARD`) |
+
+`가능하면 / 가급적 / 되도록 / 선호` 같은 뉘앙스는 `SOFT`, 그 외에는 `HARD`로 구조화한다(규칙 파서·Gemini 동일).
 
 ## 자연어 구조화 (AI)
 
@@ -45,8 +47,9 @@ Gemini structured output(`response_schema` = Pydantic + `response_mime_type="app
 
 ## 현재 증명하는 것
 
-- 후보 전체에 대한 실제 Hard Constraint 평가
+- 후보 6곳 전체에 대한 실제 Hard Constraint 평가
 - fixture 데이터에서 최소 가격 완화값 `15000 → 17000` 탐색
+- 완화 후 HARD 조건을 모두 통과한 후보가 2곳 남고, B의 `SOFT` 음식 선호가 최종 선택을 실제로 바꿈(선호 없으면 `restaurant-01` 해산물, 선호 반영 시 `restaurant-04`)
 - 사용자 승인 전 조건 불변과 승인 후 새 version 계산
 - Shared API의 proposal·owner detail 비노출
 - 초대 코드로 발급한 random owner-bound Demo session과 shared/private 화면 분리

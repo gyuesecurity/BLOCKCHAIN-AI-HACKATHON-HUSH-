@@ -1,12 +1,12 @@
 DEMO_CANDIDATES = [
     {
         "candidate_id": "restaurant-01",
-        "name": "모두의 식탁",
+        "name": "바다 한상",
         "price": 17000,
-        "category": "korean",
+        "category": "seafood",
         "accessibility_features": ["wheelchair_ramp"],
         "end_time": "20:30",
-        "travel_minutes_by_participant": {"A": 20, "B": 25, "C": 15, "D": 25},
+        "travel_minutes_by_participant": {"A": 20, "B": 20, "C": 15, "D": 20},
     },
     {
         "candidate_id": "restaurant-02",
@@ -14,7 +14,7 @@ DEMO_CANDIDATES = [
         "price": 14000,
         "category": "korean",
         "accessibility_features": [],
-        "end_time": "20:30",
+        "end_time": "20:00",
         "travel_minutes_by_participant": {"A": 15, "B": 20, "C": 20, "D": 20},
     },
     {
@@ -28,12 +28,30 @@ DEMO_CANDIDATES = [
     },
     {
         "candidate_id": "restaurant-04",
-        "name": "바다마을",
-        "price": 14000,
-        "category": "seafood",
+        "name": "모두의 식탁",
+        "price": 17000,
+        "category": "korean",
         "accessibility_features": ["wheelchair_ramp"],
         "end_time": "20:30",
-        "travel_minutes_by_participant": {"A": 20, "B": 20, "C": 15, "D": 20},
+        "travel_minutes_by_participant": {"A": 20, "B": 25, "C": 15, "D": 25},
+    },
+    {
+        "candidate_id": "restaurant-05",
+        "name": "한상 차림",
+        "price": 16000,
+        "category": "korean",
+        "accessibility_features": ["wheelchair_ramp"],
+        "end_time": "22:00",
+        "travel_minutes_by_participant": {"A": 20, "B": 15, "C": 20, "D": 15},
+    },
+    {
+        "candidate_id": "restaurant-06",
+        "name": "정원 뷔페",
+        "price": 19000,
+        "category": "western",
+        "accessibility_features": ["wheelchair_ramp"],
+        "end_time": "20:30",
+        "travel_minutes_by_participant": {"A": 25, "B": 25, "C": 20, "D": 25},
     },
 ]
 
@@ -49,7 +67,7 @@ DEMO_CONSTRAINTS = [
         "constraint_id": "constraint-b-food",
         "participant_pseudonym": "B",
         "constraint_type": "excluded_category",
-        "priority": "HARD",
+        "priority": "SOFT",
         "constraint_value": {"categories": ["seafood"]},
     },
     {

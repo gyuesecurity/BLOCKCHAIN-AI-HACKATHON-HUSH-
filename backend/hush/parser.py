@@ -48,35 +48,50 @@ def _number(text: str) -> int | None:
     return int(match.group(1)) if match else None
 
 
+_SOFT_HINTS = ("가능하면", "가급적", "웬만하면", "왠만하면", "되도록", "이왕이면", "선호")
+
+
+def _priority(text: str) -> str:
+    """선호/가급적 뉘앙스면 SOFT, 그렇지 않으면 HARD(기본값). llm.py와 동일한 규칙."""
+    return "SOFT" if any(hint in text for hint in _SOFT_HINTS) else "HARD"
+
+
+def _priority_label(priority: str) -> str:
+    return "선호(SOFT)" if priority == "SOFT" else "필수(HARD)"
+
+
 def parse_korean_constraint(source_text: str) -> dict[str, Any]:
     """Deterministic, explicitly labelled fallback for the pre-screening demo."""
     text = source_text.strip()
     if not text or len(text) > 500:
         raise ParseError("조건은 1자 이상 500자 이하로 입력해 주세요.")
 
+    priority = _priority(text)
+    label = _priority_label(priority)
+
     amount = _number(text)
     if amount is not None and any(word in text for word in ("이하", "넘", "예산", "부담")):
         candidate = {
             "constraint_type": "max_price",
-            "priority": "HARD",
+            "priority": priority,
             "constraint_value": {"amount": amount, "currency": "KRW"},
-            "explanation": f"1인 예상 비용이 {amount:,}원을 넘지 않아야 하는 필수 조건으로 해석했습니다.",
+            "explanation": f"1인 예상 비용이 {amount:,}원을 넘지 않아야 하는 {label} 조건으로 해석했습니다.",
         }
     elif any(word in text for word in ("해산물", "seafood")) and any(
-        word in text for word in ("제외", "못", "안 먹", "피해")
+        word in text for word in ("제외", "못", "안 먹", "피해", "피하")
     ):
         candidate = {
             "constraint_type": "excluded_category",
-            "priority": "HARD",
+            "priority": priority,
             "constraint_value": {"categories": ["seafood"]},
-            "explanation": "해산물 분류를 제외하는 필수 조건으로 해석했습니다.",
+            "explanation": f"해산물 분류를 제외하는 {label} 조건으로 해석했습니다.",
         }
     elif any(word in text for word in ("휠체어", "경사로", "접근성")):
         candidate = {
             "constraint_type": "accessibility_required",
-            "priority": "HARD",
+            "priority": priority,
             "constraint_value": {"features": ["wheelchair_ramp"]},
-            "explanation": "휠체어 경사로가 필요한 필수 접근성 조건으로 해석했습니다.",
+            "explanation": f"휠체어 경사로가 필요한 {label} 접근성 조건으로 해석했습니다.",
         }
     else:
         time_match = re.search(r"([01]?\d|2[0-3])\s*시", text)
@@ -84,9 +99,9 @@ def parse_korean_constraint(source_text: str) -> dict[str, Any]:
             hour = int(time_match.group(1))
             candidate = {
                 "constraint_type": "latest_end_time",
-                "priority": "HARD",
+                "priority": priority,
                 "constraint_value": {"time": f"{hour:02d}:00"},
-                "explanation": f"종료 시간이 {hour:02d}:00 이전이어야 하는 필수 조건으로 해석했습니다.",
+                "explanation": f"종료 시간이 {hour:02d}:00 이전이어야 하는 {label} 조건으로 해석했습니다.",
             }
         else:
             raise ParseError("지원하는 가격·해산물 제외·접근성·종료 시간 조건으로 해석하지 못했습니다.")

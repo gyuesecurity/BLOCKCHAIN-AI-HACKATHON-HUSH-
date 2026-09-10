@@ -59,7 +59,10 @@ byId("parse").onclick = async () => {
     const mode = data.is_ai
       ? `AI 구조화 · ${data.model || "LLM"}`
       : `규칙 파서${data.llm_fallback ? " (LLM fallback)" : ""}`;
-    byId("draft-output").textContent = `[${mode}]\n${data.notice || ""}\n\n` + JSON.stringify(data, null, 2);
+    const priority = data.structured_candidate?.priority;
+    const priorityLabel = priority === "SOFT" ? "선호(SOFT)" : "필수(HARD)";
+    byId("draft-output").textContent =
+      `[${mode} · ${priorityLabel}]\n${data.notice || ""}\n\n` + JSON.stringify(data, null, 2);
   }
 };
 byId("confirm").onclick = async () => {
