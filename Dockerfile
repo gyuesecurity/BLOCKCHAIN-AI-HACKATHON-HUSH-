@@ -6,7 +6,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 COPY . .
-RUN pip install --no-cache-dir .
+# llm  -> real Gemini structuring   chain -> EVM testnet anchoring
+# postgres -> psycopg driver for a managed database (Railway injects DATABASE_URL)
+RUN pip install --no-cache-dir '.[llm,chain,postgres]'
 
 EXPOSE 8000
-CMD ["uvicorn", "hush.main:app", "--app-dir", "backend", "--host", "0.0.0.0", "--port", "8000"]
+# Honour $PORT when the platform injects one (Railway, Render, Fly, Cloud Run).
+CMD ["sh", "-c", "uvicorn hush.main:app --app-dir backend --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
