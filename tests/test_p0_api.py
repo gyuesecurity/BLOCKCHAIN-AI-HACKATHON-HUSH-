@@ -187,10 +187,20 @@ def test_mutation_requires_idempotency_key_and_validates_constraint_shape():
 
 
 def test_p0_frontend_surfaces_and_cross_owner_private_input_protection():
+    legacy_shared = client.get("/")
+    legacy_participant = client.get("/participant")
+    assert "shared-summary" in legacy_shared.text and "개발 정보 보기" in legacy_shared.text
+    assert "private-summary" in legacy_participant.text and "검증 세부 정보 보기" in legacy_participant.text
+    assert "ui.js" in legacy_shared.text and "ui.js" in legacy_participant.text
+
     for path, marker in (("/p0", "FULL P0 PARTICIPANT"), ("/p0-room", "SAFE PROJECTION"), ("/p0-verify", "INDEPENDENT VERIFICATION")):
         response = client.get(path)
         assert response.status_code == 200
         assert marker in response.text
+        assert "ui.js" in response.text
+    assert "개발 정보 보기" in client.get("/p0").text
+    assert "개발 정보 보기" in client.get("/p0-room").text
+    assert "검증 세부 정보 보기" in client.get("/p0-verify").text
 
     room = create_room()
     _, a_session = join(room, "private-a")

@@ -25,7 +25,8 @@
       </section>
       <section class="output-card">
         <div class="output-head"><span class="label">ROOM-SAFE STATUS</span><span class="actions"><a class="button-link" href="/invite">참가자 초대 QR</a><a class="button-link" href="/participant">참가자 개인 화면</a></span></div>
-        <pre id="output">공용 상태를 불러오는 중입니다.</pre>
+        <div id="shared-summary" class="summary-grid"><p class="empty-message">공용 상태를 불러오는 중입니다.</p></div>
+        <details class="debug-details"><summary>개발 정보 보기</summary><pre id="output">공용 상태를 불러오는 중입니다.</pre></details>
       </section>
       <aside>
         <strong id="verification-label">Demo local verification — not on-chain</strong>
@@ -37,6 +38,6 @@
         </div>
       </aside>
     </main>
-    <script src="/static/app.js"></script>
+    <script src="/static/ui.js"></script><script src="/static/app.js"></script>
   </body>
 </html>
