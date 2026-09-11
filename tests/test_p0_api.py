@@ -1,10 +1,12 @@
 import itertools
 
+import pytest
 from fastapi.testclient import TestClient
 
 from hush.main import app
 from hush import chain
 from hush.p0 import P0Service
+from hush.service import DemoError
 from hush.store import StateStore
 
 
@@ -329,6 +331,16 @@ def test_p0_rooms_and_creation_idempotency_survive_restart(tmp_path):
     ] == "A"
 
 
+def test_failed_database_save_rolls_back_in_memory_mutation(tmp_path, monkeypatch):
+    service = P0Service(StateStore(f"sqlite:///{tmp_path / 'rollback.db'}"))
+    room = service.create_room("rollback", 2, "demo-candidates-v1", "create")
+    monkeypatch.setattr(service, "_save", lambda _room: (_ for _ in ()).throw(RuntimeError("db down")))
+    with pytest.raises(DemoError) as error:
+        service.join(room["decision_room_id"], room["invite_token"], "join")
+    assert error.value.code == "DEPENDENCY_UNAVAILABLE"
+    assert service.shared(room["decision_room_id"])["participant_count"] == 0
+
+
 def test_failed_condition_commitment_can_be_retried(monkeypatch):
     monkeypatch.setattr(chain, "chain_enabled", lambda: True)
     attempts = itertools.count()
@@ -393,6 +405,9 @@ def test_failed_final_commitment_can_be_retried_for_all_empty_room(monkeypatch):
     )
     assert failed.json()["commitment_status"] == "COMMITMENT_FAILED"
     assert client.get(f"/rooms/{room['decision_room_id']}/final-decision").status_code == 409
+    assert client.get(
+        f"/rooms/{room['decision_room_id']}/receipts/me", headers=joined[0][1]
+    ).status_code == 409
 
     retried = client.post(
         f"/rooms/{room['decision_room_id']}/final-decision/commitment/retry",

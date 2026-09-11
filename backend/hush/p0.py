@@ -118,9 +118,24 @@ class P0Service:
             if existing["fingerprint"] != fingerprint:
                 raise DemoError(409, "IDEMPOTENCY_KEY_REUSED", "같은 요청 키가 다른 내용에 사용됐습니다.")
             return copy.deepcopy(existing["response"])
-        response = mutation()
-        room["idempotency"][key] = {"fingerprint": fingerprint, "response": copy.deepcopy(response)}
-        self._save(room)
+        snapshot = copy.deepcopy(room)
+        try:
+            response = mutation()
+            room["idempotency"][key] = {
+                "fingerprint": fingerprint, "response": copy.deepcopy(response)
+            }
+            self._save(room)
+        except DemoError:
+            room.clear()
+            room.update(snapshot)
+            raise
+        except Exception as exc:
+            room.clear()
+            room.update(snapshot)
+            raise DemoError(
+                503, "DEPENDENCY_UNAVAILABLE",
+                "상태를 안전하게 저장하지 못했습니다. 같은 요청 키로 다시 시도해 주세요.",
+            ) from exc
         return response
 
     def create_room(
@@ -893,7 +908,11 @@ class P0Service:
             room = self._room(room_id)
             participant = self._participant(room, session)
             final = room.get("final_record")
-            if not final:
+            if (
+                not final
+                or room["status"] != "COMPLETED"
+                or final["status"] not in {"COMMITTED", "COMMITTED_LOCALLY"}
+            ):
                 raise DemoError(409, "NOT_READY", "최종 결정이 아직 없습니다.")
             run = final["run"]
             own_entries = [
@@ -1032,6 +1051,13 @@ class P0Service:
                         == entry["condition_commitment"].lower()
                     )
                 checks["onchain_own_condition_records_match"] = condition_records_match
+        except chain.ChainUnavailable:
+            return {
+                "status": "UNAVAILABLE",
+                "checks": checks,
+                "verification_mode": receipt["verification_mode"],
+                "message": "공개 블록체인 기록을 현재 조회할 수 없습니다. 잠시 후 다시 검증해 주세요.",
+            }
         except (KeyError, TypeError, ValueError):
             checks = {"receipt_well_formed": False}
         return {"status": "VERIFIED" if all(checks.values()) else "INVALID", "checks": checks, "verification_mode": receipt["verification_mode"]}
