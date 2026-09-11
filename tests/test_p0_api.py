@@ -180,6 +180,8 @@ def test_mutation_requires_idempotency_key_and_validates_constraint_shape():
     )
     assert invalid.status_code == 422
     assert invalid.json()["code"] == "VALIDATION_ERROR"
+    assert invalid.headers["Cache-Control"] == "no-store"
+    assert "frame-ancestors 'none'" in invalid.headers["Content-Security-Policy"]
 
 
 def test_p0_frontend_surfaces_and_cross_owner_private_input_protection():
