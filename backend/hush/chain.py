@@ -30,6 +30,7 @@ DEFAULT_CHAIN_ID = 11155111
 DEFAULT_NETWORK_NAME = "Ethereum Sepolia"
 DEFAULT_EXPLORER = "https://sepolia.etherscan.io"
 DEFAULT_TX_TIMEOUT = 150
+DEFAULT_GAS_LIMIT = 500_000
 
 ENGINE_VERSION = "0.2.0"
 
@@ -75,6 +76,11 @@ def _explorer_base() -> str:
 def _tx_timeout() -> int:
     raw = os.getenv("HUSH_CHAIN_TX_TIMEOUT")
     return int(raw) if raw else DEFAULT_TX_TIMEOUT
+
+
+def _gas_limit() -> int:
+    raw = os.getenv("HUSH_CHAIN_GAS_LIMIT")
+    return int(raw) if raw else DEFAULT_GAS_LIMIT
 
 
 # Public, dependency-free config accessors (used by service.py).
@@ -200,6 +206,9 @@ def _send(w3, account, func, chain_id: int, *, nonce: int | None = None) -> dict
             "chainId": chain_id,
             "maxPriorityFeePerGas": priority,
             "maxFeePerGas": base_fee * 2 + priority,
+            # Avoid eth_estimateGas against a lagging backend immediately after
+            # the previous mined step on load-balanced public RPC endpoints.
+            "gas": _gas_limit(),
         }
     )
     signed = account.sign_transaction(tx)
