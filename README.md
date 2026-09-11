@@ -220,6 +220,9 @@ docker run --rm -p 8000:8000 hush-demo
 
 `Dockerfile` + `railway.json`이 준비돼 있습니다. 절차·환경변수·문제 해결은 [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
+- 공개 데모: [`https://hush-web-production.up.railway.app`](https://hush-web-production.up.railway.app)
+- 상태 확인: [`/health`](https://hush-web-production.up.railway.app/health)
+
 1. Railway 프로젝트에 이 repo 연결 (Dockerfile 자동 감지) → Postgres 추가 (`DATABASE_URL` 자동 인식).
 2. 서비스 변수에 `HUSH_STATE_KEY`, `HUSH_DEMO_ADMIN_KEY`, (선택) `GEMINI_API_KEY`, `HUSH_CHAIN_*` 설정. `PORT`는 건드리지 않습니다.
 3. Generate Domain → `https://<app>.up.railway.app/health`로 `persistence: postgresql` 확인.

@@ -34,15 +34,15 @@ LLM/온체인 부분만 fallback으로 표시된다.
 
 ## §A 배포된 URL로 시연
 
-1. 팀이 공유한 URL 확인: `https://____.up.railway.app`
-2. `https://____/health` → `{"status":"ok","persistence":"postgresql", ...}` 확인
+1. 배포 URL 확인: `https://hush-web-production.up.railway.app`
+2. `https://hush-web-production.up.railway.app/health` → `{"status":"ok","persistence":"postgresql", ...}` 확인
 3. 화면:
-   - 공용 Decision Room: `https://____/`
-   - 참가자 초대 QR: `https://____/invite`
+   - 공용 Decision Room: `https://hush-web-production.up.railway.app/`
+   - 참가자 초대 QR: `https://hush-web-production.up.railway.app/invite`
    - 참가자 개인 화면: 폰으로 QR 스캔 (자동으로 `/participant?p=..&code=..` 진입)
 4. 깨끗한 상태로 시작:
    ```bash
-   curl -X POST https://____/api/demo/admin/reset -H "X-Demo-Admin-Key: <관리자키>"
+   curl -X POST https://hush-web-production.up.railway.app/api/demo/admin/reset -H "X-Demo-Admin-Key: <관리자키>"
    ```
 5. → **§3**
 
@@ -124,7 +124,7 @@ curl -X POST http://127.0.0.1:8000/api/demo/admin/reset -H "X-Demo-Admin-Key: <�
 
 ## §3 시연 순서 (약 6분, §A·§B 공통)
 
-아래 URL은 §A면 `https://____`, §B면 `http://127.0.0.1:8000`.
+아래 URL은 §A면 `https://hush-web-production.up.railway.app`, §B면 `http://127.0.0.1:8000`.
 
 ### ① 시작 상태 — 공용 화면
 - 상태 `COLLECTING`, 참가자 4명, 확정 0
