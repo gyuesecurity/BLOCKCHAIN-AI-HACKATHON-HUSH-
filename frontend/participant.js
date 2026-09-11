@@ -3,6 +3,62 @@ let participant = sessionStorage.getItem("hushParticipant");
 let session = sessionStorage.getItem("hushParticipantSession");
 let draftId = null;
 let latestReceipt = null;
+const UI = window.HushUI;
+
+const SUMMARY_TARGET = {
+  "join-output": "join-summary",
+  "draft-output": "draft-summary",
+  "private-output": "private-summary",
+  "receipt-output": "receipt-summary",
+};
+
+function renderFailure(debugTarget, error) {
+  const target = byId(SUMMARY_TARGET[debugTarget]);
+  if (target) UI.render(target, [UI.card("요청을 완료하지 못했어요", "다시 확인해 주세요", error.message, "warn")]);
+}
+
+function renderPrivateState(data) {
+  const participantState = data.participant || {};
+  const [participantTitle, participantBody] = UI.status(participantState.input_status || participantState.status);
+  const history = data.constraint_version_history || [];
+  const active = history.filter((item) => item.status === "ACTIVE");
+  const cards = [
+    UI.card("내 참여 상태", participantTitle, participantBody, participantState.input_status === "INPUT_CONFIRMED" ? "good" : ""),
+    UI.card("확정한 조건", `${active.length}개`, active.length ? "현재 결정에 사용되는 내 조건입니다." : "아직 확정된 조건이 없습니다."),
+    ...active.map((item) => UI.card(
+      `${UI.typeLabel(item.constraint_type)} · ${item.priority === "HARD" ? "필수" : "선호"}`,
+      UI.constraintValue(item.constraint_type, item.constraint_value),
+      `조건 버전 ${item.constraint_version}`,
+    )),
+  ];
+  if (data.proposal?.status === "PROPOSED") cards.unshift(UI.card("내 확인이 필요해요", "비공개 조건 조정 제안", "아래 제안을 확인하고 직접 선택해 주세요.", "warn"));
+  UI.render(byId("private-summary"), cards);
+}
+
+function renderDraft(data) {
+  const item = data.structured_candidate || data.constraint || {};
+  const parser = data.is_ai ? `AI 구조화 · ${data.model || "LLM"}` : "규칙 기반 구조화";
+  UI.render(byId("draft-summary"), [
+    UI.card("해석 방식", parser, data.notice || "확정하기 전에 내용을 직접 확인해 주세요."),
+    item.constraint_type && UI.card(
+      `${UI.typeLabel(item.constraint_type)} · ${item.priority === "SOFT" ? "선호" : "필수"}`,
+      UI.constraintValue(item.constraint_type, item.constraint_value),
+      item.explanation || "이 내용으로 조건을 확정할 수 있습니다.",
+      "good",
+    ),
+  ]);
+}
+
+function renderReceipt(data, verified = false) {
+  const candidate = data.candidate || data.final_candidate || {};
+  const status = data.status || (verified ? "VERIFIED" : "AVAILABLE");
+  const ok = status === "VERIFIED" || data.verification_mode === "ONCHAIN";
+  UI.render(byId("receipt-summary"), [
+    candidate.name && UI.card("최종 선택", candidate.name, candidate.category ? `${candidate.category} · 1인 ${UI.money(candidate.price ?? candidate.price_per_person)}` : "최종 결정 결과", "good"),
+    UI.card("검증 상태", status === "VERIFIED" ? "모든 증거가 일치합니다" : "영수증 발급 완료", verified ? "내 입력과 최종 기록을 다시 계산해 확인했어요." : "무결성 검증 버튼으로 직접 확인할 수 있어요.", ok ? "good" : ""),
+    UI.card("검증 방식", UI.verificationMode(data.verification_mode), data.verification_mode === "ONCHAIN" ? "Sepolia 공개 기록과 비교했습니다." : "로컬 증거를 비교합니다."),
+  ]);
+}
 
 async function request(path, method = "GET", body = undefined) {
   const headers = { "Content-Type": "application/json" };
@@ -23,9 +79,10 @@ function showWorkspace() {
 async function perform(task, target = "private-output") {
   try {
     const data = await task();
-    byId(target).textContent = JSON.stringify(data, null, 2);
+    UI.debug(byId(target), data);
     return data;
   } catch (error) {
+    renderFailure(target, error);
     byId(target).textContent = `ERROR\n${error.message}`;
     return null;
   }
@@ -33,10 +90,12 @@ async function perform(task, target = "private-output") {
 
 async function refreshPrivate() {
   const data = await perform(() => request(`/api/demo/participants/${participant}`));
+  if (!data) return;
+  renderPrivateState(data);
   const proposal = data?.proposal;
   byId("proposal-box").hidden = !proposal || proposal.status !== "PROPOSED";
   if (proposal) {
-    byId("proposal-text").textContent = `${proposal.current_constraint_value.amount.toLocaleString()}원에서 ${proposal.proposed_constraint_value.amount.toLocaleString()}원으로 변경하면 ${proposal.feasible_candidate_count}개의 합의 후보가 생깁니다.`;
+    byId("proposal-text").textContent = `현재 ${UI.money(proposal.current_constraint_value.amount)} 조건을 ${UI.money(proposal.proposed_constraint_value.amount)}으로 조정하면 모두가 선택할 수 있는 후보 ${proposal.feasible_candidate_count}개가 생겨요.`;
   }
 }
 
@@ -46,6 +105,7 @@ async function doJoin(selected, inviteCode) {
     "join-output",
   );
   if (!data) return;
+  UI.render(byId("join-summary"), [UI.card("참여 완료", `${selected} 참가자 개인 화면`, "이 브라우저에서 내 조건만 안전하게 확인할 수 있어요.", "good")]);
   participant = selected;
   session = data.participant_session;
   sessionStorage.setItem("hushParticipant", participant);
@@ -65,13 +125,14 @@ byId("parse").onclick = async () => {
       : `규칙 파서${data.llm_fallback ? " (LLM fallback)" : ""}`;
     const priority = data.structured_candidate?.priority;
     const priorityLabel = priority === "SOFT" ? "선호(SOFT)" : "필수(HARD)";
+    renderDraft(data);
     byId("draft-output").textContent =
       `[${mode} · ${priorityLabel}]\n${data.notice || ""}\n\n` + JSON.stringify(data, null, 2);
   }
 };
 byId("confirm").onclick = async () => {
   const data = await perform(() => request(`/api/demo/participants/${participant}/constraints/confirm`, "POST", { draft_id: draftId }), "draft-output");
-  if (data) { byId("confirm").disabled = true; await refreshPrivate(); }
+  if (data) { renderDraft(data); byId("confirm").disabled = true; await refreshPrivate(); }
 };
 byId("run").onclick = () => perform(() => request(`/api/demo/participants/${participant}/decision-runs`, "POST")).then(refreshPrivate);
 byId("refresh").onclick = refreshPrivate;
@@ -84,15 +145,17 @@ const STEP_LABELS = {
   commitDecision: "3. commitDecision (최종 결정 커밋)",
 };
 const STATUS_CLASS = { PENDING: "chain-status-pending", FAILED: "chain-status-failed", UNAVAILABLE: "chain-status-local" };
+const CHAIN_STATUS_LABEL = { CONFIRMED: "기록 완료", PENDING: "기록 대기", FAILED: "기록 실패", UNAVAILABLE: "연결 불가" };
 
 function renderChain(provenance, verifyResult) {
   const box = byId("chain-box");
-  if (!provenance) { box.hidden = true; return; }
-  box.hidden = false;
+  const details = byId("chain-details");
+  if (!provenance) { details.hidden = true; return; }
+  details.hidden = false;
 
   const status = provenance.status || "UNKNOWN";
   const statusEl = byId("chain-status");
-  statusEl.textContent = status;
+  statusEl.textContent = CHAIN_STATUS_LABEL[status] || "상태 확인";
   statusEl.className = "badge " + (STATUS_CLASS[status] || "");
 
   const meta = [];
@@ -149,6 +212,7 @@ function renderChain(provenance, verifyResult) {
 byId("receipt").onclick = async () => {
   latestReceipt = await request(`/api/demo/participants/${participant}/receipt`);
   renderChain(latestReceipt.chain_provenance, null);
+  renderReceipt(latestReceipt);
   byId("receipt-output").textContent = JSON.stringify(latestReceipt, null, 2);
 };
 byId("verify").onclick = async () => {
@@ -156,6 +220,7 @@ byId("verify").onclick = async () => {
   if (data) {
     const prov = (latestReceipt && latestReceipt.chain_provenance) || null;
     renderChain(prov, data);
+    renderReceipt(data, true);
   }
 };
 byId("export").onclick = async () => {

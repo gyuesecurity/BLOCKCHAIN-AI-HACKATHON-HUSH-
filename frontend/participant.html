@@ -18,38 +18,42 @@
         <label>참가자<select id="participant"><option>A</option><option>B</option><option>C</option><option>D</option></select></label>
         <label>초대 코드<input id="invite-code" type="password" autocomplete="off" placeholder="팀에서 받은 초대 코드" /></label>
         <button id="join">개인 세션 시작</button>
-        <pre id="join-output">참가자와 초대 코드를 입력하세요.</pre>
+        <div id="join-summary" class="summary-grid"><p class="empty-message">참가자와 초대 코드를 입력하세요.</p></div>
+        <details class="debug-details"><summary>개발 정보 보기</summary><pre id="join-output"></pre></details>
       </section>
       <div id="workspace" hidden>
         <section class="output-card form-card">
           <div class="output-head"><span class="label">PRIVATE INPUT</span><div class="actions"><span id="owner" class="badge"></span><button id="logout" class="ghost">세션 종료</button></div></div>
           <label>다른 사람에게 공개하고 싶지 않은 조건<textarea id="source-text" rows="4" placeholder="예: 15,000원을 넘는 곳은 부담스러워요."></textarea></label>
           <div class="actions"><button id="parse">조건 구조화</button><button id="confirm" disabled>해석 결과 확정</button></div>
-          <pre id="draft-output">아직 구조화된 조건이 없습니다.</pre>
+          <div id="draft-summary" class="summary-grid"><p class="empty-message">아직 구조화된 조건이 없습니다.</p></div>
+          <details class="debug-details"><summary>개발 정보 보기</summary><pre id="draft-output"></pre></details>
         </section>
         <section class="output-card form-card">
           <span class="label">DECISION & PRIVATE NEGOTIATION</span>
           <div class="actions"><button id="run">결정 엔진 실행</button><button id="refresh" class="ghost">내 상태 새로고침</button></div>
           <div id="proposal-box" hidden>
             <h3>비공개 완화 제안</h3><p id="proposal-text"></p>
-            <div class="actions"><button id="accept">ACCEPT</button><button id="reject" class="ghost">KEEP</button></div>
+            <div class="actions"><button id="accept">제안대로 조정</button><button id="reject" class="ghost">현재 조건 유지</button></div>
           </div>
-          <pre id="private-output">개인 상태를 불러오세요.</pre>
+          <div id="private-summary" class="summary-grid"><p class="empty-message">개인 상태를 불러오세요.</p></div>
+          <details class="debug-details"><summary>개발 정보 보기</summary><pre id="private-output"></pre></details>
         </section>
         <section class="output-card form-card">
           <span class="label">PARTICIPANT RECEIPT</span>
           <div class="actions"><button id="receipt">영수증 보기</button><button id="verify">무결성 검증</button><button id="export" class="ghost">검증용 JSON 내보내기</button></div>
-          <div id="chain-box" class="chain-box" hidden>
+          <div id="receipt-summary" class="summary-grid"><p class="empty-message">최종 결정 이후 확인할 수 있습니다.</p></div>
+          <details id="chain-details" class="debug-details" hidden><summary>블록체인 기록 상세 보기</summary><div id="chain-box" class="chain-box">
             <div class="chain-head"><span class="label">ON-CHAIN PROVENANCE</span><span id="chain-status" class="badge"></span></div>
             <p id="chain-meta" class="chain-meta"></p>
             <ol id="chain-txs" class="chain-txs"></ol>
             <p id="chain-verify" class="chain-verify" hidden></p>
-          </div>
-          <pre id="receipt-output">최종 결정 이후 확인할 수 있습니다.</pre>
+          </div></details>
+          <details class="debug-details"><summary>검증 세부 정보 보기</summary><pre id="receipt-output"></pre></details>
         </section>
       </div>
       <a class="back-link" href="/">← 공용 Decision Room</a>
     </main>
-    <script src="/static/participant.js"></script>
+    <script src="/static/ui.js"></script><script src="/static/participant.js"></script>
   </body>
 </html>
