@@ -209,6 +209,14 @@ def test_p0_frontend_surfaces_and_cross_owner_private_input_protection():
         client.get(f"/rooms/{room['decision_room_id']}").json()
     )
 
+    parsed = client.post(
+        f"/rooms/{room['decision_room_id']}/private-inputs/{received['private_input_id']}/parse",
+        headers={**a_session, **idem("owner-parse")},
+    )
+    assert parsed.status_code == 200
+    assert parsed.json()["parser_mode"] in {"LLM", "DEMO_RULE_PARSER"}
+    assert isinstance(parsed.json()["is_ai"], bool)
+
 
 def test_full_p0_chain_lifecycle_and_public_read_verification(monkeypatch):
     monkeypatch.setattr(chain, "chain_enabled", lambda: True)
