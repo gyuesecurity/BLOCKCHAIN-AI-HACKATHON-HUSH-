@@ -57,3 +57,43 @@ def test_relaxation_below_17000_stays_infeasible():
             for item in DEMO_CONSTRAINTS
         ]
         assert decide(DEMO_CANDIDATES, changed).result_type == "INFEASIBLE"
+
+
+def test_minimum_travel_time_relaxation_is_dataset_derived():
+    constraints = [
+        {
+            "constraint_id": "travel-a",
+            "participant_pseudonym": "A",
+            "constraint_type": "max_travel_minutes",
+            "priority": "HARD",
+            "constraint_value": {"minutes": 10},
+        }
+    ]
+    result = decide(DEMO_CANDIDATES, constraints)
+    assert result.result_type == "INFEASIBLE"
+    assert result.proposal["constraint_type"] == "max_travel_minutes"
+    assert result.proposal["proposed_constraint_value"] == {"minutes": 15}
+    assert result.proposal["relaxation_cost"] == 5
+
+
+def test_minimum_end_time_relaxation_is_dataset_derived():
+    constraints = [
+        {
+            "constraint_id": "time-a",
+            "participant_pseudonym": "A",
+            "constraint_type": "latest_end_time",
+            "priority": "HARD",
+            "constraint_value": {"time": "19:30"},
+        }
+    ]
+    result = decide(DEMO_CANDIDATES, constraints)
+    assert result.result_type == "INFEASIBLE"
+    assert result.proposal["constraint_type"] == "latest_end_time"
+    assert result.proposal["proposed_constraint_value"] == {"time": "20:00"}
+    assert result.proposal["relaxation_cost"] == 30
+
+
+def test_cross_type_relaxation_cost_uses_normalized_units():
+    result = decide(DEMO_CANDIDATES, DEMO_CONSTRAINTS)
+    assert result.proposal["constraint_type"] == "max_price"
+    assert result.proposal["relaxation_cost"] == 2

@@ -192,6 +192,8 @@ uvicorn hush.main:app --app-dir backend --reload
 
 브라우저에서 공용 화면 `http://127.0.0.1:8000`과 참가자 전용 화면 `http://127.0.0.1:8000/participant`를 엽니다. A/B/C/D는 각자 전달받은 Demo invite code로 join하고 `자연어 입력 → 구조화 결과 확인 → 확정`을 수행합니다. 네 입력이 모두 확정되면 참가자가 Engine을 실행하고, A의 private 화면에서만 완화안을 승인한 뒤 재실행과 영수증 검증을 진행합니다. `HUSH_CHAIN_*` 환경변수가 설정되면 Ethereum Sepolia에 실제 기록하고 `Local + Ethereum Sepolia on-chain provenance`를 표시하며, 미설정이거나 기록에 실패하면 `Demo local verification — not on-chain`으로 정직하게 fallback합니다.
 
+전체 P0 화면은 `http://127.0.0.1:8000/p0`에서 시작합니다. 여기서는 임의의 2~20인 방 생성·초대·복수 조건·`EMPTY` 제출·비공개 협상·온체인 실패 재시도까지 사용할 수 있습니다. 공용 safe projection은 `/p0-room?room=<ROOM_ID>`, 참가자 영수증 검증은 `/p0-verify?room=<ROOM_ID>`로 분리되어 있습니다. 이 브랜치를 배포하기 전에는 운영 URL의 기존 사전심사 데모만 제공됩니다.
+
 Demo invite code와 입력 예시는 [실행 데모 문서](docs/DEMO.md)에 있습니다. 발표 당일 순서·대사·복구 절차는 [시연 런북](docs/DEMO-RUNBOOK.md)을 따르세요. 외부 LLM 미연결 상태에서는 parser가 `DEMO_RULE_PARSER`, `is_ai=false`를 반환하므로 실제 AI로 표현하지 않습니다.
 
 ```bash
@@ -241,4 +243,5 @@ docker run --rm -p 8000:8000 hush-demo
 - [Frontend Flow](docs/architecture/08-frontend-flow.md)
 - [Security & Privacy](docs/architecture/09-security-and-privacy.md)
 - [Implementation Plan](docs/architecture/11-implementation-plan.md)
+- [P0 Implementation Status](docs/P0-IMPLEMENTATION-STATUS.md)
 - [Pre-Screening Demo](docs/architecture/12-pre-screening-demo.md)

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HUSH P0 — 참가자</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body data-p0-page="participant">
+    <main class="participant-main">
+      <header><span class="eyebrow">FULL P0 PARTICIPANT</span><h1 class="small-title">HUSH</h1><p>방 생성부터 비공개 조건, 협상, 영수증 검증까지 실제 P0 흐름입니다.</p></header>
+      <section class="output-card form-card">
+        <span class="label">CREATE OR JOIN</span>
+        <label>새 방 제목<input id="title" value="오늘 저녁 식당 결정" maxlength="120" /></label>
+        <label>필요 참가자 수<input id="required-count" type="number" min="2" max="20" value="4" /></label>
+        <div class="actions"><button id="create-room">새 방 만들기</button></div>
+        <label>Decision Room ID<input id="room-id" autocomplete="off" /></label>
+        <label>초대 토큰<input id="invite-token" type="password" autocomplete="off" /></label>
+        <div class="actions"><button id="join-room">참가하기</button><button id="refresh-room" class="ghost">상태 새로고침</button></div>
+        <pre id="room-output">새 방을 만들거나 초대 링크로 참가하세요.</pre>
+      </section>
+      <div id="p0-workspace" hidden>
+        <section class="output-card form-card">
+          <div class="output-head"><span class="label">PRIVATE CONSTRAINTS</span><span id="pseudonym" class="badge"></span></div>
+          <label>자연어 입력<textarea id="source-text" rows="3" maxlength="500" placeholder="예: 2만원 이하이고 30분 안에 갈 수 있는 곳"></textarea></label>
+          <p class="privacy-notice">AI 구조화를 사용하면 이 원문이 설정된 외부 LLM 제공자에게 전송될 수 있습니다. 결과는 초안이며, 아래 값을 직접 확인하고 확정해야 조건으로 사용됩니다.</p>
+          <div class="actions"><button id="parse-input">AI로 해석</button></div>
+          <label>조건 종류<select id="constraint-type"><option value="max_price">최대 가격</option><option value="max_travel_minutes">최대 이동 시간</option><option value="latest_end_time">최종 종료 시간</option><option value="excluded_category">제외 카테고리</option><option value="accessibility_required">필수 접근성</option></select></label>
+          <label>조건 값<input id="constraint-value" placeholder="예: 20000 / 30 / 21:00 / seafood" /></label>
+          <label>우선순위<select id="priority"><option value="HARD">HARD 필수</option><option value="SOFT">SOFT 선호</option></select></label>
+          <div class="actions"><button id="add-constraint">조건 확정</button><button id="confirm-constrained">조건 입력 완료</button><button id="confirm-empty" class="ghost">조건 없음(EMPTY)</button></div>
+          <pre id="constraint-output">조건 원문과 확정 값은 이 참가자 세션에서만 조회됩니다.</pre>
+          <div id="constraint-recovery" class="actions"></div>
+        </section>
+        <section class="output-card form-card">
+          <span class="label">DECISION & PRIVATE NEGOTIATION</span>
+          <div class="actions"><button id="run-decision">결정 실행</button><button id="retry-final" class="ghost">온체인 최종 기록 재시도</button><button id="load-proposals" class="ghost">내 협상안 확인</button><a id="shared-link" class="button-link" href="#">공용 화면</a></div>
+          <div id="proposal-list"></div>
+          <pre id="decision-output">모든 참가자가 입력을 완료하면 실행할 수 있습니다.</pre>
+        </section>
+        <section class="output-card form-card">
+          <span class="label">RECEIPT & VERIFICATION</span>
+          <div class="actions"><button id="load-final">최종 결정</button><button id="load-receipt">내 영수증</button><button id="verify-receipt">독립 검증</button><a id="verify-link" class="button-link" href="#">검증 전용 화면</a></div>
+          <pre id="receipt-output">최종 결정 이후 증거를 확인할 수 있습니다.</pre>
+        </section>
+      </div>
+      <a class="back-link" href="/">← 사전심사 데모</a>
+    </main>
+    <script src="/static/p0.js"></script>
+  </body>
+</html>

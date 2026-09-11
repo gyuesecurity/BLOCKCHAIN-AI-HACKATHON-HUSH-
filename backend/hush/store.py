@@ -192,6 +192,12 @@ class StateStore:
             return None
         return self._open(row.blob, row.encrypted)
 
+    def list_room_ids(self) -> list[str]:
+        """Return persisted room identifiers without opening private blobs."""
+        with self.engine.begin() as conn:
+            rows = conn.execute(select(room_state.c.room_id).order_by(room_state.c.room_id)).all()
+        return [row.room_id for row in rows]
+
     def clear(self, room_id: str) -> None:
         with self.engine.begin() as conn:
             conn.execute(room_state.delete().where(room_state.c.room_id == room_id))

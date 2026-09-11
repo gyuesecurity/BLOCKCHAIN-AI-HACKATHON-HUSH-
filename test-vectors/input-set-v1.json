@@ -1,0 +1,36 @@
+{
+  "name": "participant input set v1",
+  "empty": {
+    "payload": {
+      "decision_room_id": "room-test-001",
+      "participant_pseudonym": "B",
+      "participant_input_id": "participant-input-b-empty",
+      "input_mode": "EMPTY",
+      "empty_marker": "HUSH_P0_EMPTY"
+    },
+    "salt": "0x2222222222222222222222222222222222222222222222222222222222222222",
+    "canonical_json_utf8": "{\"decision_room_id\":\"room-test-001\",\"empty_marker\":\"HUSH_P0_EMPTY\",\"input_mode\":\"EMPTY\",\"participant_input_id\":\"participant-input-b-empty\",\"participant_pseudonym\":\"B\",\"protocol\":\"HUSH\",\"salt\":\"0x2222222222222222222222222222222222222222222222222222222222222222\",\"schema_version\":\"1\"}",
+    "expected_condition_commitment": "0xdf2634c1af2f7d4777fd377c7b7a2fa763d4df7f70415d59c59ccb8db668d39d"
+  },
+  "participant_inputs": [
+    {
+      "decision_room_id": "room-test-001",
+      "decision_run_id": "run-test-001",
+      "participant_input_id": "participant-input-a-price",
+      "input_mode": "CONSTRAINED",
+      "constraint_version_id": "constraint-a-price-v1",
+      "condition_commitment": "0xc5645420ea1c44e55ef147f03674afb71504122206b2bc8fc3a3b234b65709f9",
+      "expected_input_set_leaf": "0xc0556d76e5235c5597bda6414e64d88f014b31ddf4c13330e0a438edb85b7f75"
+    },
+    {
+      "decision_room_id": "room-test-001",
+      "decision_run_id": "run-test-001",
+      "participant_input_id": "participant-input-b-empty",
+      "input_mode": "EMPTY",
+      "constraint_version_id": null,
+      "condition_commitment": "0xdf2634c1af2f7d4777fd377c7b7a2fa763d4df7f70415d59c59ccb8db668d39d",
+      "expected_input_set_leaf": "0x7daf4c17b6224c47e0f1d40e54153d2d1db5692385be9480f159d1d0a7e6cf1d"
+    }
+  ],
+  "expected_input_set_root": "0x45074586d8c21b8d858cc31519b6bed06cd0a2e5084356798e49ab63a3ecd2b4"
+}

@@ -198,3 +198,29 @@ def test_room_key_is_deterministic_and_salt_scoped():
     c = chain.room_key("hush-demo-dinner-001", "salt-two")
     assert a == b != c
     assert a.startswith("0x") and len(a) == 66
+
+
+def test_read_only_client_does_not_require_private_key(monkeypatch):
+    monkeypatch.delenv("HUSH_CHAIN_PRIVATE_KEY", raising=False)
+    monkeypatch.setenv("HUSH_CHAIN_CONTRACT_ADDRESS", "0x000000000000000000000000000000000000dEaD")
+
+    class Eth:
+        def contract(self, **kwargs):
+            return kwargs
+
+    class FakeWeb3:
+        HTTPProvider = staticmethod(lambda *args, **kwargs: object())
+        to_checksum_address = staticmethod(lambda value: value)
+
+        def __init__(self, _provider):
+            self.eth = Eth()
+
+        def is_connected(self):
+            return True
+
+    import web3
+
+    monkeypatch.setattr(web3, "Web3", FakeWeb3)
+    monkeypatch.setattr(chain, "load_artifact", lambda: {"abi": []})
+    _w3, contract = chain._reader()
+    assert contract["address"].endswith("dEaD")

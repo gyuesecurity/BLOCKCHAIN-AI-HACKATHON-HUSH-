@@ -5,9 +5,9 @@ failure degrades to the honest LOCAL fallback, and nothing here can change a
 decision — it only anchors hashes the deterministic engine already produced
 (``docs/architecture/07-blockchain-contract.md``).
 
-Scope (Demo-04, minimal): ``createDecision`` -> ``finalizeInputSet`` ->
-``commitDecision`` for one decision room on an EVM testnet (default Ethereum
-Sepolia). Per-participant condition commitments stay off-chain in this demo.
+The legacy Demo-04 path anchors one final decision. The canonical P0 adapter
+also publishes per-participant condition versions, atomic supersessions, and
+the final input/result provenance for multi-room operation.
 
 Enabled when ``HUSH_CHAIN_PRIVATE_KEY`` and ``HUSH_CHAIN_CONTRACT_ADDRESS`` are
 set (or ``HUSH_CHAIN_ENABLED`` forces it). ``web3`` comes from the ``[chain]``
@@ -116,6 +116,19 @@ def room_key(room_id: str, run_salt: str) -> str:
     return "0x" + _room_key_bytes(room_id, run_salt).hex()
 
 
+def canonical_room_key(room_id: str) -> str:
+    """Stable P0 room key (the demo-only path uses a reset salt instead)."""
+    from web3 import Web3
+
+    return Web3.to_hex(Web3.keccak(text=room_id))
+
+
+def _identifier(value: str) -> bytes:
+    from web3 import Web3
+
+    return bytes(Web3.keccak(text=value))
+
+
 def explorer_tx_url(tx_hash: str) -> str:
     return f"{_explorer_base()}/tx/{tx_hash}"
 
@@ -146,6 +159,26 @@ def _client():
         address=Web3.to_checksum_address(address), abi=artifact["abi"]
     )
     return w3, account, contract
+
+
+def _reader():
+    """Build a read-only contract client without requiring the relayer key."""
+    try:
+        from web3 import Web3
+    except ModuleNotFoundError as exc:  # pragma: no cover - depends on install
+        raise ChainUnavailable("web3 미설치 (pip install 'hush-demo[chain]')") from exc
+
+    address = _contract_address()
+    if not address:
+        raise ChainUnavailable("HUSH_CHAIN_CONTRACT_ADDRESS 미설정")
+    w3 = Web3(Web3.HTTPProvider(_rpc_url(), request_kwargs={"timeout": 30}))
+    if not w3.is_connected():
+        raise ChainUnavailable(f"RPC 연결 실패: {_rpc_url()}")
+    artifact = load_artifact()
+    contract = w3.eth.contract(
+        address=Web3.to_checksum_address(address), abi=artifact["abi"]
+    )
+    return w3, contract
 
 
 def _send(w3, account, func, chain_id: int) -> dict[str, Any]:
@@ -269,11 +302,222 @@ def anchor_final_decision(
     return base
 
 
+def commit_condition(
+    *, room_id: str, participant_pseudonym: str, constraint_version_id: str,
+    constraint_version: int, condition_commitment: str,
+) -> dict[str, Any]:
+    """Create a canonical P0 room when needed and publish one condition version."""
+    w3, account, contract = _client()
+    chain_id = _chain_id()
+    key = _identifier(room_id)
+    participant_key = _identifier(participant_pseudonym)
+    version_key = _identifier(constraint_version_id)
+    commitment = _b32(condition_commitment)
+    transactions: list[dict[str, Any]] = []
+    try:
+        current = contract.functions.conditionRecord(version_key).call()
+        if current[0]:
+            matches = (
+                bytes(current[1]) == key
+                and bytes(current[2]) == participant_key
+                and int(current[3]) == constraint_version
+                and bytes(current[4]) == commitment
+            )
+            if not matches:
+                return {
+                    "status": "FAILED", "verification_mode": "ONCHAIN",
+                    "reason": "기존 조건 레코드가 요청 내용과 다릅니다.", "transactions": [],
+                }
+            return {
+                "status": "CONFIRMED", "verification_mode": "ONCHAIN",
+                "network": _network_name(), "chain_id": chain_id,
+                "contract_address": contract.address,
+                "decision_room_key": "0x" + key.hex(), "transactions": [],
+                "recovered_from_chain": True,
+            }
+        existing = contract.functions.verifyDecisionRecord(key).call()
+        if not existing[0]:
+            transactions.append(_send(w3, account, contract.functions.createDecision(key), chain_id))
+        transactions.append(_send(
+            w3, account,
+            contract.functions.commitCondition(
+                key, participant_key, version_key, constraint_version, commitment,
+            ),
+            chain_id,
+        ))
+    except Exception as exc:
+        return {"status": "FAILED", "verification_mode": "ONCHAIN", "reason": str(exc)[:200], "transactions": transactions}
+    status = "CONFIRMED" if all(item["status"] == "CONFIRMED" for item in transactions) else "FAILED"
+    return {
+        "status": status, "verification_mode": "ONCHAIN", "network": _network_name(),
+        "chain_id": chain_id, "contract_address": contract.address,
+        "decision_room_key": "0x" + key.hex(), "transactions": transactions,
+    }
+
+
+def supersede_condition(
+    *, room_id: str, participant_pseudonym: str,
+    previous_constraint_version_id: str, previous_constraint_version: int,
+    previous_condition_commitment: str, new_constraint_version_id: str,
+    new_constraint_version: int, new_condition_commitment: str,
+) -> dict[str, Any]:
+    """Atomically link a confirmed condition version to its approved successor."""
+    w3, account, contract = _client()
+    key = _identifier(room_id)
+    participant_key = _identifier(participant_pseudonym)
+    previous_key = _identifier(previous_constraint_version_id)
+    new_key = _identifier(new_constraint_version_id)
+    previous_commitment = _b32(previous_condition_commitment)
+    new_commitment = _b32(new_condition_commitment)
+    try:
+        current = contract.functions.conditionRecord(new_key).call()
+        previous = contract.functions.conditionRecord(previous_key).call()
+        if current[0]:
+            matches = (
+                bytes(current[1]) == key
+                and bytes(current[2]) == participant_key
+                and int(current[3]) == new_constraint_version
+                and bytes(current[4]) == new_commitment
+                and bytes(previous[5]) == new_key
+            )
+            if not matches:
+                return {
+                    "status": "FAILED", "verification_mode": "ONCHAIN",
+                    "reason": "기존 조건 승계 레코드가 요청 내용과 다릅니다.",
+                    "transactions": [],
+                }
+            return {
+                "status": "CONFIRMED", "verification_mode": "ONCHAIN",
+                "network": _network_name(), "chain_id": _chain_id(),
+                "contract_address": contract.address,
+                "decision_room_key": "0x" + key.hex(), "transactions": [],
+                "recovered_from_chain": True,
+            }
+        entry = _send(
+            w3, account,
+            contract.functions.supersedeCondition(
+                key, participant_key, previous_key, previous_constraint_version,
+                previous_commitment, new_key, new_constraint_version, new_commitment,
+            ),
+            _chain_id(),
+        )
+    except Exception as exc:
+        return {"status": "FAILED", "verification_mode": "ONCHAIN", "reason": str(exc)[:200], "transactions": []}
+    return {
+        "status": entry["status"], "verification_mode": "ONCHAIN",
+        "network": _network_name(), "chain_id": _chain_id(),
+        "contract_address": contract.address, "decision_room_key": "0x" + key.hex(),
+        "transactions": [entry],
+    }
+
+
+def anchor_existing_decision(
+    *, room_id: str, input_set_root: str, candidate_dataset_hash: str,
+    engine_code_hash: str, final_decision_hash: str,
+    engine_version: str = ENGINE_VERSION,
+) -> dict[str, Any]:
+    """Finalize and commit a P0 room already created by condition commitments."""
+    w3, account, contract = _client()
+    chain_id = _chain_id()
+    key = _identifier(room_id)
+    commitment = contract.functions.computeDecisionCommitment(
+        key, _b32(input_set_root), _b32(candidate_dataset_hash), engine_version,
+        _b32(engine_code_hash), _b32(final_decision_hash),
+    ).call()
+    transactions: list[dict[str, Any]] = []
+    try:
+        record = contract.functions.verifyDecisionRecord(key).call()
+        if not record[0]:
+            entry = _send(w3, account, contract.functions.createDecision(key), chain_id)
+            transactions.append(entry)
+            if entry["status"] != "CONFIRMED":
+                raise ChainUnavailable("의사결정 방 생성 트랜잭션이 실패했습니다.")
+            record = contract.functions.verifyDecisionRecord(key).call()
+
+        if record[1]:
+            finalized_matches = (
+                bytes(record[3]) == _b32(input_set_root)
+                and bytes(record[4]) == _b32(candidate_dataset_hash)
+                and bytes(record[5]) == _b32(engine_code_hash)
+                and record[8] == engine_version
+            )
+            if not finalized_matches:
+                return {
+                    "status": "FAILED", "verification_mode": "ONCHAIN",
+                    "reason": "이미 확정된 입력 집합이 현재 실행 결과와 다릅니다.",
+                    "transactions": transactions,
+                }
+        else:
+            entry = _send(
+                w3, account,
+                contract.functions.finalizeInputSet(
+                    key, _b32(input_set_root), _b32(candidate_dataset_hash), engine_version,
+                    _b32(engine_code_hash),
+                ),
+                chain_id,
+            )
+            transactions.append(entry)
+            if entry["status"] != "CONFIRMED":
+                raise ChainUnavailable("입력 집합 확정 트랜잭션이 실패했습니다.")
+
+        record = contract.functions.verifyDecisionRecord(key).call()
+        if record[2]:
+            decision_matches = (
+                bytes(record[6]) == _b32(final_decision_hash)
+                and bytes(record[7]) == bytes(commitment)
+            )
+            if not decision_matches:
+                return {
+                    "status": "FAILED", "verification_mode": "ONCHAIN",
+                    "reason": "이미 기록된 최종 결정이 현재 실행 결과와 다릅니다.",
+                    "transactions": transactions,
+                }
+        else:
+            entry = _send(
+                w3, account,
+                contract.functions.commitDecision(
+                    key, _b32(input_set_root), _b32(candidate_dataset_hash),
+                    _b32(engine_code_hash), _b32(final_decision_hash), bytes(commitment),
+                ),
+                chain_id,
+            )
+            transactions.append(entry)
+            if entry["status"] != "CONFIRMED":
+                raise ChainUnavailable("최종 결정 기록 트랜잭션이 실패했습니다.")
+    except Exception as exc:
+        return {"status": "FAILED", "verification_mode": "ONCHAIN", "reason": str(exc)[:200], "transactions": transactions}
+    return {
+        "status": "CONFIRMED", "verification_mode": "ONCHAIN", "network": _network_name(),
+        "chain_id": chain_id, "contract_address": contract.address,
+        "decision_room_key": "0x" + key.hex(),
+        "onchain_decision_commitment": "0x" + bytes(commitment).hex(),
+        "transactions": transactions,
+        "recovered_from_chain": not transactions,
+    }
+
+
+def read_condition_record(constraint_version_id: str) -> dict[str, Any]:
+    """Read a condition commitment without exposing its private preimage."""
+    from web3 import Web3
+
+    w3, contract = _reader()
+    record = contract.functions.conditionRecord(_identifier(constraint_version_id)).call()
+    fields = (
+        "exists", "decision_room_key", "participant_pseudonym_key",
+        "constraint_version", "condition_commitment", "superseded_by",
+    )
+    out: dict[str, Any] = {}
+    for name, value in zip(fields, record):
+        out[name] = Web3.to_hex(value) if isinstance(value, (bytes, bytearray)) else value
+    out["block_number"] = w3.eth.block_number
+    return out
+
+
 def read_decision_record(decision_room_key: str) -> dict[str, Any]:
     """Read-only registry lookup used by the receipt verifier."""
     from web3 import Web3
 
-    w3, _account, contract = _client()
+    w3, contract = _reader()
     record = contract.functions.verifyDecisionRecord(_b32(decision_room_key)).call()
     fields = [
         "created",
