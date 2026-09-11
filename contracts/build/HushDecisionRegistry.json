@@ -1,0 +1,525 @@
+{
+  "contractName": "HushDecisionRegistry",
+  "compiler": "solcjs 0.8.24, optimizer runs=200",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "relayer_",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "AlreadyExists",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidState",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidValue",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "RecordMismatch",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Unauthorized",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "decisionRoomId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "participantPseudonym",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "constraintVersionId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint32",
+          "name": "constraintVersion",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "conditionCommitment",
+          "type": "bytes32"
+        }
+      ],
+      "name": "ConditionCommitted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "decisionRoomId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "participantPseudonym",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "previousConstraintVersionId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint32",
+          "name": "previousConstraintVersion",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "previousConditionCommitment",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "newConstraintVersionId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint32",
+          "name": "newConstraintVersion",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "newConditionCommitment",
+          "type": "bytes32"
+        }
+      ],
+      "name": "ConditionSuperseded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "decisionRoomId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "decisionCommitment",
+          "type": "bytes32"
+        }
+      ],
+      "name": "DecisionCommitted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "decisionRoomId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "DecisionCreated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "decisionRoomId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "inputSetRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "InputSetFinalized",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "decisionRoomId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "participantPseudonym",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "constraintVersionId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "constraintVersion",
+          "type": "uint32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "conditionCommitment",
+          "type": "bytes32"
+        }
+      ],
+      "name": "commitCondition",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "decisionRoomId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "inputSetRoot",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "candidateDatasetHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "engineCodeHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "finalDecisionHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "decisionCommitment",
+          "type": "bytes32"
+        }
+      ],
+      "name": "commitDecision",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "decisionRoomId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "inputSetRoot",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "candidateDatasetHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "string",
+          "name": "engineVersion",
+          "type": "string"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "engineCodeHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "finalDecisionHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "computeDecisionCommitment",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "constraintVersionId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "conditionRecord",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "exists",
+              "type": "bool"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "decisionRoomId",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "participantPseudonym",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "constraintVersion",
+              "type": "uint32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "commitment",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "supersededBy",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct HushDecisionRegistry.ConditionRecord",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "decisionRoomId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "createDecision",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "decisionRoomId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "inputSetRoot",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "candidateDatasetHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "string",
+          "name": "engineVersion",
+          "type": "string"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "engineCodeHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "finalizeInputSet",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "relayer",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "decisionRoomId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "participantPseudonym",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "previousConstraintVersionId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "previousConstraintVersion",
+          "type": "uint32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "previousConditionCommitment",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "newConstraintVersionId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "newConstraintVersion",
+          "type": "uint32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "newConditionCommitment",
+          "type": "bytes32"
+        }
+      ],
+      "name": "supersedeCondition",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "decisionRoomId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "verifyDecisionRecord",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "created",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "inputFinalized",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "decisionCommitted",
+              "type": "bool"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "inputSetRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "candidateDatasetHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "engineCodeHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "finalDecisionHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "decisionCommitment",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "string",
+              "name": "engineVersion",
+              "type": "string"
+            }
+          ],
+          "internalType": "struct HushDecisionRegistry.DecisionRecord",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60a060405234801561000f575f80fd5b506040516112b03803806112b083398101604081905261002e91610066565b6001600160a01b03811661005557604051632a9ffab760e21b815260040160405180910390fd5b6001600160a01b0316608052610093565b5f60208284031215610076575f80fd5b81516001600160a01b038116811461008c575f80fd5b9392505050565b6080516111e36100cd5f395f818160fa01528181610279015281816103500152818161058a015281816109910152610ac601526111e35ff3fe608060405234801561000f575f80fd5b5060043610610090575f3560e01c80638406c079116100635780638406c079146100f5578063a1f4ceb014610134578063abdc419f14610154578063ca3b02f314610167578063f2e5cfaf1461017a575f80fd5b806308b63cce1461009457806345e3c617146100a95780634d85be79146100bc5780637135adbf146100e2575b5f80fd5b6100a76100a2366004610cd6565b61026e565b005b6100a76100b7366004610d05565b610345565b6100cf6100ca366004610d5c565b6104f8565b6040519081526020015b60405180910390f35b6100a76100f0366004610e34565b61057f565b61011c7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020016100d9565b610147610142366004610cd6565b61082a565b6040516100d99190610edf565b6100a7610162366004610f70565b610986565b6100a7610175366004611000565b610abb565b61021b610188366004610cd6565b6040805160c0810182525f80825260208201819052918101829052606081018290526080810182905260a0810191909152505f90815260016020818152604092839020835160c081018552815460ff16151581529281015491830191909152600281015492820192909252600382015463ffffffff1660608201526004820154608082015260059091015460a082015290565b6040516100d991905f60c082019050825115158252602083015160208301526040830151604083015263ffffffff60608401511660608301526080830151608083015260a083015160a083015292915050565b336001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016146102b6576040516282b42960e81b815260040160405180910390fd5b806102d457604051632a9ffab760e21b815260040160405180910390fd5b5f8181526020819052604090205460ff16156103035760405163119b4fd360e11b815260040160405180910390fd5b5f81815260208190526040808220805460ff191660011790555182917f4b65fe8252a205ecb35f7947629d534f95be5f3c742504475dcf41ee9d8aa8f091a250565b336001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000161461038d576040516282b42960e81b815260040160405180910390fd5b5f8581526020819052604090205460ff166103bb5760405163baf3f0f760e01b815260040160405180910390fd5b8315806103c6575082155b806103d5575063ffffffff8216155b806103de575080155b156103fc57604051632a9ffab760e21b815260040160405180910390fd5b5f8381526001602052604090205460ff161561042b5760405163119b4fd360e11b815260040160405180910390fd5b6040805160c0810182526001808252602080830189815283850189815263ffffffff88811660608701818152608088018a81525f60a08a018181528e8252898952908b902099518a5460ff1916901515178a5595519789019790975592516002880155915160038701805463ffffffff191691909216179055925160048501555160059093019290925582519081529081018390528491869188917f95aaff4afa046e956e481fdef92a09041fc4465d38886d197ebaf68a19ae5054910160405180910390a45050505050565b8251602093840120604080517fa31277265b9f473ef413d91206352fd73359c451a498644a423717e67862aaa8818701524681830152306060820152608081019890985260a088019690965260c087019490945260e08601939093526101008501526101208085019290925282518085039092018252610140909301909152805191012090565b336001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016146105c7576040516282b42960e81b815260040160405180910390fd5b5f8881526020819052604090205460ff166105f55760405163baf3f0f760e01b815260040160405180910390fd5b821580610600575080155b1561061e57604051632a9ffab760e21b815260040160405180910390fd5b5f868152600160205260409020805460ff161580610640575088816001015414155b8061064f575087816002015414155b806106675750600381015463ffffffff878116911614155b80610676575084816004015414155b156106945760405163554df85760e11b815260040160405180910390fd5b6005810154156106b75760405163baf3f0f760e01b815260040160405180910390fd5b5f8481526001602052604090205460ff16156106e65760405163119b4fd360e11b815260040160405180910390fd5b6106f186600161103f565b63ffffffff168363ffffffff161461071c57604051632a9ffab760e21b815260040160405180910390fd5b6040805160c081018252600180825260208083018d81528385018d815263ffffffff808a1660608701908152608087018a81525f60a089018181528e8252968890528990209751885490151560ff199091161788559351958701959095559051600286015592516003850180549190941663ffffffff1990911617909255905160048301555160059182015582018590555188908a907f94c372168abe2f2a31c3d287828d9beab2b8505654a6dac1d1ae5dc078ce0bcb90610817908b908b908b908b908b908b9095865263ffffffff948516602087015260408601939093526060850191909152909116608083015260a082015260c00190565b60405180910390a3505050505050505050565b60408051610120810182525f8082526020820181905291810182905260608082018390526080820183905260a0820183905260c0820183905260e08201929092526101008101919091525f8281526020818152604091829020825161012081018452815460ff80821615158352610100808304821615159584019590955262010000909104161515938101939093526001810154606084015260028101546080840152600381015460a0840152600481015460c0840152600581015460e084015260068101805491928401916108ff9061106f565b80601f016020809104026020016040519081016040528092919081815260200182805461092b9061106f565b80156109765780601f1061094d57610100808354040283529160200191610976565b820191905f5260205f20905b81548152906001019060200180831161095957829003601f168201915b5050505050815250509050919050565b336001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016146109ce576040516282b42960e81b815260040160405180910390fd5b5f868152602081905260409020805460ff1615806109f257508054610100900460ff165b15610a105760405163baf3f0f760e01b815260040160405180910390fd5b851580610a1b575084155b80610a24575082155b80610a2d575081155b15610a4b57604051632a9ffab760e21b815260040160405180910390fd5b805461ff001916610100178155600181018690556002810185905560068101610a758486836110f3565b506003810182905560405186815287907ff2f33b999a4e2b5bf57fa4c21c1a292a10a0d49b4e1765f8afc4a18fa12a24ed9060200160405180910390a250505050505050565b336001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001614610b03576040516282b42960e81b815260040160405180910390fd5b5f8681526020819052604090208054610100900460ff161580610b2d5750805462010000900460ff165b15610b4b5760405163baf3f0f760e01b815260040160405180910390fd5b821580610b56575081155b15610b7457604051632a9ffab760e21b815260040160405180910390fd5b858160010154141580610b8b575084816002015414155b80610b9a575083816003015414155b15610bb85760405163554df85760e11b815260040160405180910390fd5b5f610c51888888856006018054610bce9061106f565b80601f0160208091040260200160405190810160405280929190818152602001828054610bfa9061106f565b8015610c455780601f10610c1c57610100808354040283529160200191610c45565b820191905f5260205f20905b815481529060010190602001808311610c2857829003601f168201915b505050505089896104f8565b9050808314610c735760405163554df85760e11b815260040160405180910390fd5b6004820184905560058201839055815462ff000019166201000017825560405188907fa0c1c9a1f53d878cb1b20a6195d402ddceffc243eef786b12e7fdfffb30b7df390610cc49086815260200190565b60405180910390a25050505050505050565b5f60208284031215610ce6575f80fd5b5035919050565b803563ffffffff81168114610d00575f80fd5b919050565b5f805f805f60a08688031215610d19575f80fd5b853594506020860135935060408601359250610d3760608701610ced565b949793965091946080013592915050565b634e487b7160e01b5f52604160045260245ffd5b5f805f805f8060c08789031215610d71575f80fd5b863595506020870135945060408701359350606087013567ffffffffffffffff80821115610d9d575f80fd5b818901915089601f830112610db0575f80fd5b813581811115610dc257610dc2610d48565b604051601f8201601f19908116603f01168101908382118183101715610dea57610dea610d48565b816040528281528c6020848701011115610e02575f80fd5b826020860160208301375f6020848301015280975050505050506080870135915060a087013590509295509295509295565b5f805f805f805f80610100898b031215610e4c575f80fd5b883597506020890135965060408901359550610e6a60608a01610ced565b94506080890135935060a08901359250610e8660c08a01610ced565b915060e089013590509295985092959890939650565b5f81518084525f5b81811015610ec057602081850181015186830182015201610ea4565b505f602082860101526020601f19601f83011685010191505092915050565b60208152610ef260208201835115159052565b5f6020830151610f06604084018215159052565b50604083015180151560608401525060608301516080830152608083015160a083015260a083015160c083015260c083015160e083015260e0830151610100818185015280850151915050610120808185015250610f68610140840182610e9c565b949350505050565b5f805f805f8060a08789031215610f85575f80fd5b863595506020870135945060408701359350606087013567ffffffffffffffff80821115610fb1575f80fd5b818901915089601f830112610fc4575f80fd5b813581811115610fd2575f80fd5b8a6020828501011115610fe3575f80fd5b602083019550809450505050608087013590509295509295509295565b5f805f805f8060c08789031215611015575f80fd5b505084359660208601359650604086013595606081013595506080810135945060a0013592509050565b63ffffffff81811683821601908082111561106857634e487b7160e01b5f52601160045260245ffd5b5092915050565b600181811c9082168061108357607f821691505b6020821081036110a157634e487b7160e01b5f52602260045260245ffd5b50919050565b601f8211156110ee57805f5260205f20601f840160051c810160208510156110cc5750805b601f840160051c820191505b818110156110eb575f81556001016110d8565b50505b505050565b67ffffffffffffffff83111561110b5761110b610d48565b61111f83611119835461106f565b836110a7565b5f601f841160018114611150575f85156111395750838201355b5f19600387901b1c1916600186901b1783556110eb565b5f83815260208120601f198716915b8281101561117f578685013582556020948501946001909201910161115f565b508682101561119b575f1960f88860031b161c19848701351681555b505060018560011b018355505050505056fea26469706673582212208882fba825f17b4484c63660c50207ff020ce66a1fa23a1d18e728b69e55b87b64736f6c63430008180033"
+}

@@ -1,0 +1,20 @@
+.venv/
+.venv-test/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+artifacts/
+/build/
+cache/
+coverage/
+
+# committed on purpose: contract build artifact + deployment records
+!contracts/build/
+!contracts/build/**

@@ -1,0 +1,18 @@
+{
+  "name": "condition commitment v1",
+  "payload": {
+    "decision_room_id": "room-test-001",
+    "participant_pseudonym": "A",
+    "constraint_id": "constraint-a-price",
+    "constraint_version": 1,
+    "constraint_type": "max_price",
+    "priority": "HARD",
+    "constraint_value": {
+      "amount": 15000,
+      "currency": "KRW"
+    }
+  },
+  "salt": "0x1111111111111111111111111111111111111111111111111111111111111111",
+  "canonical_json_utf8": "{\"constraint_id\":\"constraint-a-price\",\"constraint_type\":\"max_price\",\"constraint_value\":{\"amount\":15000,\"currency\":\"KRW\"},\"constraint_version\":1,\"decision_room_id\":\"room-test-001\",\"participant_pseudonym\":\"A\",\"priority\":\"HARD\",\"protocol\":\"HUSH\",\"salt\":\"0x1111111111111111111111111111111111111111111111111111111111111111\",\"schema_version\":\"1\"}",
+  "expected_keccak256": "0xc5645420ea1c44e55ef147f03674afb71504122206b2bc8fc3a3b234b65709f9"
+}

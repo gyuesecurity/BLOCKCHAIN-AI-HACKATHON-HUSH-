@@ -8,7 +8,7 @@
 | LLM invalid JSON | 해석 불가 안내 | raw/model output 격리, 재parse 또는 직접 입력 | 가능 |
 | Decision Engine error | 계산 실패 안내 | same immutable snapshot 재시도, run=`FAILED` | 새 run 전까지 불가 |
 | No feasible solution | generic private conflict | proposal 탐색, 원 conditions 보존 | negotiation으로 가능 |
-| No valid relaxation | 합의 불가 안내 | `CLOSED` 또는 participant가 새 input 제출 | 자동 진행 불가 |
+| No valid relaxation | 합의 불가 안내 | P0에서는 room=`CLOSED`; 새 조건은 새 DecisionRoom에서 제출 | 자동 진행 불가 |
 | Database error | 저장 실패 안내 | transaction rollback, client 재시도 | 안전 저장 전 불가 |
 | Blockchain RPC failure | commitment pending 안내 | initial은 `commitCondition`, successor는 single `supersedeCondition`을 outbox로 재시도; 기존 `ACTIVE`+`CONFIRMED` version 보존 | replacement activation/finalization 불가 |
 | Transaction pending | `Commitment=PENDING` 표시 | receipt polling, 같은 tx 재방송 금지; successor는 `PENDING_ACTIVATION` 유지 | 조건 수집 가능, final commit 대기 |

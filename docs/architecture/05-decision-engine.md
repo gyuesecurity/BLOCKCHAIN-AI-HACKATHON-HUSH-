@@ -11,7 +11,7 @@ EngineOutput = { result_type, input_set_root, feasible_candidate_ids,
   conflict?, relaxation_proposals?, ranked_candidates?, selected_candidate_id? }
 ```
 
-`active_constraint_versions`는 `frozen_participant_inputs` 중 같은 frozen room roster에 속하고 현재 `ACTIVE`이며 연결된 `Commitment.status`가 `CONFIRMED`인 stale 아닌 `CONSTRAINED` version만 포함한다. Backend는 `DecisionRun` 생성 transaction에서 모든 roster participant의 `frozen_participant_inputs`와 `input_set_leaves`를 freeze한다. `CONSTRAINED` participant는 모든 eligible `HARD`와 `SOFT` version을, `EMPTY` participant는 canonical EMPTY `ParticipantInput` 하나를 제공한다. EMPTY input은 Engine constraint evaluation에는 영향을 주지 않지만 input provenance에는 포함된다. output의 `conflict`에는 internal `conflicting_constraint_version_ids`만 있으며 shared response로 직접 변환하지 않는다.
+`active_constraint_versions`는 `DecisionRun` 생성 transaction에서 eligibility 검사를 통과해 snapshot된 version이다. Backend는 이 transaction에서 모든 roster participant의 `frozen_participant_inputs`, constraint value snapshot과 `input_set_leaves`를 함께 freeze한다. Engine은 실행 시점의 현재 DB state를 재조회하지 않는다. 따라서 run 생성 뒤 원 version이 supersede되어도 현재 run의 byte-equivalent input은 바뀌지 않는다. `CONSTRAINED` participant는 모든 eligible `HARD`와 `SOFT` version을, `EMPTY` participant는 canonical EMPTY `ParticipantInput` 하나를 제공한다. EMPTY input은 Engine constraint evaluation에는 영향을 주지 않지만 input provenance에는 포함된다. output의 `conflict`에는 internal `conflicting_constraint_version_ids`만 있으며 shared response로 직접 변환하지 않는다.
 
 ## Constraint와 Candidate 표현
 

@@ -1,0 +1,12 @@
+{
+  "network": "Ethereum Sepolia",
+  "chain_id": 11155111,
+  "rpc_url": "https://ethereum-sepolia-rpc.publicnode.com",
+  "contract_address": "0x946ff260a3F67A37c6D0B60bD2E5db905b499cf8",
+  "relayer_address": "0xdcFed143dC43Cd23B46fFB6972b5fe63eef1F6A5",
+  "deployer_address": "0xdcFed143dC43Cd23B46fFB6972b5fe63eef1F6A5",
+  "deploy_tx_hash": "0xa5ba6d4eaa5f460e8b841f22f110a952fb204f427cc64dd2203daee85d813b5f",
+  "block_number": 11675107,
+  "explorer_url": "https://sepolia.etherscan.io/address/0x946ff260a3F67A37c6D0B60bD2E5db905b499cf8",
+  "compiler": "solcjs 0.8.24, optimizer runs=200"
+}

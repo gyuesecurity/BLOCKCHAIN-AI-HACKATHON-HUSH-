@@ -85,8 +85,8 @@ AI는 User Approval 없이 Constraint를 바꾸지 않으며, Backend도 Engine�
 | Participant | Private condition | 역할 |
 |---|---|---|
 | A | `max_price <= 15000` (`HARD`) | 가격 상한 |
-| B | 음식 종류 관련 `SOFT` preference | 선호 반영 |
-| C | 접근성 관련 constraint 또는 preference | 접근성 반영 |
+| B | `excluded_category=seafood` (`SOFT`) | 음식 종류 선호 |
+| C | `wheelchair_ramp` (`HARD`) | 접근성 반영 |
 | D | 종료 시간 관련 `HARD` constraint | 시간 제한 |
 
 초기 계산은 `NO FEASIBLE SOLUTION`입니다. candidate/Constraint evaluation에서 conflict와 representative relaxation target을 식별하고, A에게만 다음 proposal을 보여 줍니다.
@@ -97,7 +97,9 @@ A.max_price
 [ACCEPT] [KEEP]
 ```
 
-A가 `ACCEPT`하면 변경된 Constraint로 Decision Engine을 다시 실행하여 `FEASIBLE` 여부와 deterministic Final Decision을 실제로 계산합니다. Participant Receipt와 verification까지 이어집니다. 다른 participant에게 A의 raw private Constraint, 원값, proposal 상세 또는 개인 사유는 공개하지 않습니다.
+A가 `ACCEPT`하면 변경된 Constraint로 Decision Engine을 다시 실행하여 `FEASIBLE` 여부와 deterministic Final Decision을 실제로 계산합니다. 완화 후 HARD 조건을 모두 통과한 후보가 둘 남고, B의 `SOFT` 음식 선호가 SOFT scoring 단계에서 최종 선택을 가릅니다(선호가 없으면 candidate id 순서로 다른 후보가 선택됨). Participant Receipt와 verification까지 이어집니다. 다른 participant에게 A의 raw private Constraint, 원값, proposal 상세 또는 개인 사유는 공개하지 않습니다.
+
+`HUSH_CHAIN_*` 환경변수가 설정되면 최종 결정 커밋(`createDecision → finalizeInputSet → commitDecision`)을 EVM testnet(기본 Ethereum Sepolia)에 실제로 기록하고, Receipt에 transaction hash와 explorer link, `PENDING → CONFIRMED` 상태를 표시합니다. 레지스트리는 [`0x946ff260a3F67A37c6D0B60bD2E5db905b499cf8`](https://sepolia.etherscan.io/address/0x946ff260a3F67A37c6D0B60bD2E5db905b499cf8)에 배포돼 있습니다. 미설정이거나 RPC/tx 실패 시에는 local verification으로 자동 fallback하며 fake transaction·explorer 증거를 만들지 않습니다. 자세한 내용은 [`docs/DEMO.md`](docs/DEMO.md).
 
 Pre-Screening Demo에서는 generalized numeric minimum-relaxation search를 정상 Engine path로 사용합니다. 안정성이 확보되지 않은 경우에는 fixture로 검증된 위 representative proposal만 fallback으로 사용하며, 이를 general-purpose solver로 표현하지 않습니다. 이 경우에도 `NO FEASIBLE SOLUTION`, `FEASIBLE`, conflict status, selected candidate, Final Decision은 실제 Decision Engine 계산을 유지하며 결과 전체를 고정하지 않습니다.
 
@@ -166,11 +168,61 @@ P0/P1/P2의 정확한 경계는 [Scope](docs/architecture/00-scope.md)를 따릅
 
 ```text
 .
-├── README.md
-└── docs/
-    ├── architecture/  # canonical architecture, contracts, implementation guidance
-    └── product/       # product plan and project narrative
+├── backend/hush/      # FastAPI orchestration, deterministic Engine, receipt verification
+├── contracts/         # immutable Solidity Decision Registry
+├── fixtures/          # versioned Demo candidate dataset
+├── frontend/          # mobile-friendly single-page Demo UI
+├── scripts/           # independent local receipt verifier
+├── tests/             # Engine, privacy boundary and E2E tests
+└── docs/              # product and canonical architecture contracts
 ```
+
+## Run the Demo
+
+Python 3.11 이상이 필요합니다.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e '.[dev,llm,chain]'   # 실제 Gemini(llm)·EVM testnet(chain) 경로 포함. 최소 설치는 '.[dev]'
+uvicorn hush.main:app --app-dir backend --reload
+```
+
+실제 LLM을 쓰려면 `pip install -e '.[dev,llm]'` 후 `GEMINI_API_KEY`를 설정합니다. `.[dev]`만 설치하면 `google-genai` 미설치로 규칙 파서에 fallback합니다(honest 표기). 온체인 기록은 `.[chain]` + `HUSH_CHAIN_*` 설정 시 활성화됩니다.
+
+브라우저에서 공용 화면 `http://127.0.0.1:8000`과 참가자 전용 화면 `http://127.0.0.1:8000/participant`를 엽니다. A/B/C/D는 각자 전달받은 Demo invite code로 join하고 `자연어 입력 → 구조화 결과 확인 → 확정`을 수행합니다. 네 입력이 모두 확정되면 참가자가 Engine을 실행하고, A의 private 화면에서만 완화안을 승인한 뒤 재실행과 영수증 검증을 진행합니다. 현재 구현은 `Demo local verification — not on-chain`을 명시합니다.
+
+Demo invite code와 입력 예시는 [실행 데모 문서](docs/DEMO.md)에 있습니다. 발표 당일 순서·대사·복구 절차는 [시연 런북](docs/DEMO-RUNBOOK.md)을 따르세요. 외부 LLM 미연결 상태에서는 parser가 `DEMO_RULE_PARSER`, `is_ai=false`를 반환하므로 실제 AI로 표현하지 않습니다.
+
+```bash
+pytest
+# 전체 Python·JavaScript·Solidity 검사
+./scripts/check.sh
+```
+
+Container 실행은 다음과 같습니다. 관리자 fixture/reset API가 필요할 때만 `HUSH_DEMO_ADMIN_KEY`를 별도 secret으로 설정합니다.
+
+```bash
+docker build -t hush-demo .
+docker run --rm -p 8000:8000 hush-demo
+```
+
+### 영구 저장 · at-rest 암호화
+
+방 상태는 매 변경마다 DB에 스냅샷되고 시작 시 복원되므로 재시작해도 진행 중인 결정·영수증을 잃지 않습니다.
+
+- 기본: repo 루트 `hush-demo.db` (SQLite, 인프라 0). `HUSH_DATABASE_URL`로 임의의 SQLAlchemy URL 지정 가능.
+- `HUSH_STATE_KEY`(Fernet 키)를 설정하면 저장 blob 전체를 at-rest 암호화합니다(참가자 salt·원값·세션 토큰·원문 포함). 미설정 시 평문 저장 + 경고 로그. 재시작 후 복호화하려면 같은 키를 유지해야 합니다.
+  - 키 생성: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
+- `/health`가 현재 `persistence`(sqlite/postgresql)와 `at_rest_encryption`(fernet/none)을 보고합니다.
+
+### Railway 배포
+
+`Dockerfile` + `railway.json`이 준비돼 있습니다. 절차·환경변수·문제 해결은 [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
+1. Railway 프로젝트에 이 repo 연결 (Dockerfile 자동 감지) → Postgres 추가 (`DATABASE_URL` 자동 인식).
+2. 서비스 변수에 `HUSH_STATE_KEY`, `HUSH_DEMO_ADMIN_KEY`, (선택) `GEMINI_API_KEY`, `HUSH_CHAIN_*` 설정. `PORT`는 건드리지 않습니다.
+3. Generate Domain → `https://<app>.up.railway.app/health`로 `persistence: postgresql` 확인.
 
 ## Architecture Documents
 
