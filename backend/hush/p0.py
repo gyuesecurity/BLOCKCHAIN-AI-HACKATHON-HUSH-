@@ -373,7 +373,19 @@ class P0Service:
                     **parsed,
                 }
                 item["status"] = "PARSED"
-                return {"parse_id": draft_id, "status": "PARSED", "structured_candidates": [parsed["structured_candidate"]]}
+                response = {
+                    "parse_id": draft_id,
+                    "status": "PARSED",
+                    "parser_mode": parsed["parser_mode"],
+                    "is_ai": parsed["is_ai"],
+                    "notice": parsed["notice"],
+                    "structured_candidates": [parsed["structured_candidate"]],
+                }
+                if parsed.get("model"):
+                    response["model"] = parsed["model"]
+                if parsed.get("llm_fallback"):
+                    response["llm_fallback"] = True
+                return response
 
             return self._idempotent(room, idem_key, "parse-input", {"private_input_id": private_input_id}, mutation)
 

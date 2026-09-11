@@ -181,7 +181,7 @@ def _reader():
     return w3, contract
 
 
-def _send(w3, account, func, chain_id: int) -> dict[str, Any]:
+def _send(w3, account, func, chain_id: int, *, nonce: int | None = None) -> dict[str, Any]:
     """Sign, broadcast, and wait. Returns a per-step provenance entry."""
     latest = w3.eth.get_block("latest")
     base_fee = latest.get("baseFeePerGas", w3.eth.gas_price)
@@ -193,7 +193,10 @@ def _send(w3, account, func, chain_id: int) -> dict[str, Any]:
     tx = func.build_transaction(
         {
             "from": account.address,
-            "nonce": w3.eth.get_transaction_count(account.address, "pending"),
+            "nonce": (
+                nonce if nonce is not None
+                else w3.eth.get_transaction_count(account.address, "pending")
+            ),
             "chainId": chain_id,
             "maxPriorityFeePerGas": priority,
             "maxFeePerGas": base_fee * 2 + priority,
@@ -209,6 +212,7 @@ def _send(w3, account, func, chain_id: int) -> dict[str, Any]:
         "tx_hash": hex_hash,
         "status": "CONFIRMED" if receipt["status"] == 1 else "FAILED",
         "block_number": receipt["blockNumber"],
+        "nonce": tx["nonce"],
         "explorer_url": explorer_tx_url(hex_hash),
     }
 
@@ -282,9 +286,10 @@ def anchor_final_decision(
         ),
     ]
 
+    next_nonce = w3.eth.get_transaction_count(account.address, "pending")
     for func in steps:
         try:
-            entry = _send(w3, account, func, chain_id)
+            entry = _send(w3, account, func, chain_id, nonce=next_nonce)
         except ChainUnavailable:
             raise
         except Exception as exc:  # pragma: no cover - RPC/timeout surface
@@ -297,6 +302,7 @@ def anchor_final_decision(
         if entry["status"] != "CONFIRMED":
             base["status"] = "FAILED"
             return base
+        next_nonce += 1
 
     base["status"] = "CONFIRMED"
     return base
@@ -314,6 +320,7 @@ def commit_condition(
     version_key = _identifier(constraint_version_id)
     commitment = _b32(condition_commitment)
     transactions: list[dict[str, Any]] = []
+    next_nonce = w3.eth.get_transaction_count(account.address, "pending")
     try:
         current = contract.functions.conditionRecord(version_key).call()
         if current[0]:
@@ -337,13 +344,17 @@ def commit_condition(
             }
         existing = contract.functions.verifyDecisionRecord(key).call()
         if not existing[0]:
-            transactions.append(_send(w3, account, contract.functions.createDecision(key), chain_id))
+            transactions.append(_send(
+                w3, account, contract.functions.createDecision(key), chain_id,
+                nonce=next_nonce,
+            ))
+            next_nonce += 1
         transactions.append(_send(
             w3, account,
             contract.functions.commitCondition(
                 key, participant_key, version_key, constraint_version, commitment,
             ),
-            chain_id,
+            chain_id, nonce=next_nonce,
         ))
     except Exception as exc:
         return {"status": "FAILED", "verification_mode": "ONCHAIN", "reason": str(exc)[:200], "transactions": transactions}
@@ -425,13 +436,18 @@ def anchor_existing_decision(
         _b32(engine_code_hash), _b32(final_decision_hash),
     ).call()
     transactions: list[dict[str, Any]] = []
+    next_nonce = w3.eth.get_transaction_count(account.address, "pending")
     try:
         record = contract.functions.verifyDecisionRecord(key).call()
         if not record[0]:
-            entry = _send(w3, account, contract.functions.createDecision(key), chain_id)
+            entry = _send(
+                w3, account, contract.functions.createDecision(key), chain_id,
+                nonce=next_nonce,
+            )
             transactions.append(entry)
             if entry["status"] != "CONFIRMED":
                 raise ChainUnavailable("의사결정 방 생성 트랜잭션이 실패했습니다.")
+            next_nonce += 1
             record = contract.functions.verifyDecisionRecord(key).call()
 
         if record[1]:
@@ -454,11 +470,12 @@ def anchor_existing_decision(
                     key, _b32(input_set_root), _b32(candidate_dataset_hash), engine_version,
                     _b32(engine_code_hash),
                 ),
-                chain_id,
+                chain_id, nonce=next_nonce,
             )
             transactions.append(entry)
             if entry["status"] != "CONFIRMED":
                 raise ChainUnavailable("입력 집합 확정 트랜잭션이 실패했습니다.")
+            next_nonce += 1
 
         record = contract.functions.verifyDecisionRecord(key).call()
         if record[2]:
@@ -479,7 +496,7 @@ def anchor_existing_decision(
                     key, _b32(input_set_root), _b32(candidate_dataset_hash),
                     _b32(engine_code_hash), _b32(final_decision_hash), bytes(commitment),
                 ),
-                chain_id,
+                chain_id, nonce=next_nonce,
             )
             transactions.append(entry)
             if entry["status"] != "CONFIRMED":
