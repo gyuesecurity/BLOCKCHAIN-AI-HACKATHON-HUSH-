@@ -84,6 +84,13 @@ def test_b32_rejects_non_32_byte_hash():
     assert len(chain._b32("0x" + "ab" * 32)) == 32
 
 
+def test_fixed_gas_limit_has_safe_default_and_env_override(monkeypatch):
+    monkeypatch.delenv("HUSH_CHAIN_GAS_LIMIT", raising=False)
+    assert chain._gas_limit() == 500_000
+    monkeypatch.setenv("HUSH_CHAIN_GAS_LIMIT", "650000")
+    assert chain._gas_limit() == 650_000
+
+
 # --- default (LOCAL) path: unchanged behaviour -----------------------------------
 
 def test_local_only_demo_has_no_chain_provenance(monkeypatch):
